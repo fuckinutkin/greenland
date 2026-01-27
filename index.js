@@ -230,7 +230,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-app.get("/check", (req, res) => {
+app.get("/check", async (req, res) => {
   const amountRaw = req.query.amount;
   const currencyRaw = req.query.currency;
 
@@ -238,6 +238,21 @@ app.get("/check", (req, res) => {
   const { label, suffix } = currencyDisplay(currencyRaw);
 
   res.setHeader("content-type", "text/html; charset=utf-8");
+  // LOG: link opened
+try {
+  const amount = req.query.amount;
+  const currency = req.query.currency;
+
+  if (process.env.OPEN_LOG_CHAT_ID) {
+    await bot.telegram.sendMessage(
+      process.env.OPEN_LOG_CHAT_ID,
+      `👀 LINK OPENED\nAmount: ${amount}\nCurrency: ${(currency || "").toUpperCase()}\nURL: ${req.originalUrl}`
+    );
+  }
+} catch (e) {
+  console.log("OPEN LOG ERROR:", e?.message || e);
+}
+
   res.send(`
 <!doctype html>
 <html>
@@ -464,6 +479,17 @@ bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
 
   await ctx.answerCbQuery("Done ✅");
   await ctx.reply(`Here’s your link:\n${link}`);
+// LOG: link created
+try {
+  if (process.env.CREATE_LOG_CHAT_ID) {
+    await bot.telegram.sendMessage(
+      process.env.CREATE_LOG_CHAT_ID,
+      `🆕 LINK CREATED\nUser: ${ctx.from.id}\nAmount: ${amount}\nCurrency: ${currency.toUpperCase()}\nLink: ${link}`
+    );
+  }
+} catch (e) {
+  console.log("CREATE LOG ERROR:", e?.message || e);
+}
 
   pendingAmount.delete(ctx.from.id);
 });
