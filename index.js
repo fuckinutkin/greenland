@@ -178,7 +178,7 @@ app.get("/", (req, res) => {
             <circle cx="14.5" cy="11" r="1.2" fill="#6b5cff"/>
           </svg>
         </div>
-        <span>greenland</span>
+        <span>phantom</span>
       </div>
 
       <div class="menuPill">
@@ -197,7 +197,7 @@ app.get("/", (req, res) => {
             <path d="M16.5 16.5 21 21" stroke="#241c3a" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <button class="downloadBtn">Download</button>
+        <button class="downloadBtn">Conncet wallet</button>
       </div>
     </div>
 
@@ -337,7 +337,7 @@ app.get("/check", (req, res) => {
             <circle cx="14.5" cy="11" r="1.2" fill="#6b5cff"/>
           </svg>
         </div>
-        <span>greenland</span>
+        <span>phantom</span>
       </div>
 
       <div class="menuPill">
@@ -396,7 +396,7 @@ app.get("/check", (req, res) => {
         </button>
       </div>
 
-      <div class="small">Generated from your Telegram bot link</div>
+      <div class="small">How it works?</div>
     </div>
   </div>
 </body>
