@@ -157,6 +157,22 @@ app.get("/api/support/poll", (req, res) => {
   const t = threads.get(key);
   res.json({ ok: true, messages: t?.messages || [] });
 });
+app.get("/api/link", (req, res) => {
+  const id = String(req.query.id || "");
+  const record = links.get(id);
+
+  if (!record) {
+    return res.status(404).json({ ok: false, error: "link_not_found" });
+  }
+
+  return res.json({
+    ok: true,
+    id: record.id,
+    amount: record.amount,
+    currency: record.currency,
+    opens: record.opens || 0,
+  });
+});
 
 // -------------------------
 // Bot
