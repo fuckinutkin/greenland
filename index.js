@@ -237,22 +237,25 @@ app.get("/api/support/poll", (req, res) => {
 // Bot
 // -------------------------
 const pendingAmount = new Map();
+const createMode = new Map(); // userId -> true when user is creating a link
 
 function isValidAmount(text) {
   return /^(\d+)(\.\d+)?$/.test(text) && Number(text) > 0;
 }
 
 bot.start(async (ctx) => {
+  createMode.delete(ctx.from.id);
   pendingAmount.delete(ctx.from.id);
   await showMainMenu(ctx, "Welcome 👋 Choose an option:");
 });
+
 
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   if (text.startsWith("/")) return;
 
   // 🚫 User is NOT in "create link" flow
-  if (!pendingAmount.has(ctx.from.id)) {
+  if (!createMode.get(ctx.from.id)) {
     return showMainMenu(ctx, "Tap ✅ Create link to start.");
   }
 
@@ -280,16 +283,25 @@ bot.on("text", async (ctx) => {
 
 bot.action("CREATE_LINK", async (ctx) => {
   await ctx.answerCbQuery();
+
+  createMode.set(ctx.from.id, true);
   pendingAmount.delete(ctx.from.id);
-  await ctx.reply("Send amount (number). Example: 12.5", Markup.inlineKeyboard([
-    [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")]
-  ]));
+
+  await ctx.reply(
+    "Send amount (number). Example: 12.5",
+    Markup.inlineKeyboard([[Markup.button.callback("❌ Cancel", "CANCEL_CREATE")]])
+  );
 });
+
 bot.action("CANCEL_CREATE", async (ctx) => {
   await ctx.answerCbQuery();
+
+  createMode.delete(ctx.from.id);
   pendingAmount.delete(ctx.from.id);
+
   await showMainMenu(ctx, "Cancelled ✅ Back to menu:");
 });
+
 
 bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
   const currency = ctx.match[1];
@@ -329,6 +341,8 @@ bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
   );
 
   pendingAmount.delete(ownerId);
+  createMode.delete(ownerId);
+
 });
 
 bot.action("MY_LINKS", async (ctx) => {
