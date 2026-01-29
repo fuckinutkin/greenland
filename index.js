@@ -246,19 +246,7 @@ bot.start(async (ctx) => {
   pendingAmount.delete(ctx.from.id);
   await showMainMenu(ctx, "Welcome 👋 Choose an option:");
 });
-;
 
-  await ctx.reply(
-    "Send amount (number). Example: 12.5",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("👤 My links", "MY_LINKS")],
-      [
-        Markup.button.url("💬 Community chat", process.env.COMMUNITY_URL || "https://t.me/"),
-        Markup.button.url("📣 Greenland channel", process.env.CHANNEL_URL || "https://t.me/"),
-      ],
-    ])
-  );
-});
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   if (text.startsWith("/")) return;
