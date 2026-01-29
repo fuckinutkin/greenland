@@ -31,8 +31,8 @@ const linksByUser = new Map();
 // threadId -> { linkId, ownerId, messages: [{from, text, ts}] }
 const threads = new Map();
 
-function makeId(len = 10) {
-  return Math.random().toString(36).slice(2, 2 + len);
+function makeId() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function nowTs() {
@@ -250,15 +250,16 @@ bot.start(async (ctx) => {
 });
 
 
-bot.on("text", async (ctx) => {
+bot.on("text", async (ctx, next) => {
   const text = ctx.message.text.trim();
   if (text.startsWith("/")) return;
 // ✅ If this message is a reply to a SUPPORT message, ignore amount flow.
 // The support handler will process it.
 const repliedText = ctx.message?.reply_to_message?.text || "";
-if (repliedText.includes("🆘 SUPPORT") && repliedText.includes("Link ID:") && repliedText.includes("Thread:")) {
-  return;
+if (repliedText.includes("Link ID:") && repliedText.includes("Thread:")) {
+  return next(); // ✅ let the SUPPORT reply handler run
 }
+
 
   // 🚫 User is NOT in "create link" flow
   if (!createMode.get(ctx.from.id)) {
