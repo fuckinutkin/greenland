@@ -42,6 +42,20 @@ function nowTs() {
 function safeUpper(v) {
   return String(v || "").toUpperCase();
 }
+function mainMenuKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback("✅ Create link", "CREATE_LINK")],
+    [Markup.button.callback("👤 My links", "MY_LINKS")],
+    [
+      Markup.button.url("💬 Community chat", process.env.COMMUNITY_URL || "https://t.me/"),
+      Markup.button.url("📣 Greenland channel", process.env.CHANNEL_URL || "https://t.me/"),
+    ],
+  ]);
+}
+
+async function showMainMenu(ctx, text = "Menu:") {
+  return ctx.reply(text, mainMenuKeyboard());
+}
 
 function fmtUser(ctx) {
   const u = ctx.from;
@@ -230,6 +244,9 @@ function isValidAmount(text) {
 
 bot.start(async (ctx) => {
   pendingAmount.delete(ctx.from.id);
+  await showMainMenu(ctx, "Welcome 👋 Choose an option:");
+});
+;
 
   await ctx.reply(
     "Send amount (number). Example: 12.5",
@@ -242,17 +259,24 @@ bot.start(async (ctx) => {
     ])
   );
 });
-
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   if (text.startsWith("/")) return;
 
+  // 🚫 User is NOT in "create link" flow
+  if (!pendingAmount.has(ctx.from.id)) {
+    return showMainMenu(ctx, "Tap ✅ Create link to start.");
+  }
+
+  // ❌ Invalid amount
   if (!isValidAmount(text)) {
     return ctx.reply("❌ Invalid number. Send like: 10 or 10.5");
   }
 
+  // ✅ Save amount
   pendingAmount.set(ctx.from.id, text);
 
+  // ➡️ Show ONLY currency buttons + cancel
   return ctx.reply(
     "Choose currency:",
     Markup.inlineKeyboard([
@@ -261,13 +285,22 @@ bot.on("text", async (ctx) => {
         Markup.button.callback("USDC", "CUR:usdc"),
         Markup.button.callback("SOL", "CUR:sol"),
       ],
-      [Markup.button.callback("👤 My links", "MY_LINKS")],
-      [
-        Markup.button.url("💬 Community chat", process.env.COMMUNITY_URL || "https://t.me/"),
-        Markup.button.url("📣 Greenland channel", process.env.CHANNEL_URL || "https://t.me/"),
-      ],
+      [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")],
     ])
   );
+});
+
+bot.action("CREATE_LINK", async (ctx) => {
+  await ctx.answerCbQuery();
+  pendingAmount.delete(ctx.from.id);
+  await ctx.reply("Send amount (number). Example: 12.5", Markup.inlineKeyboard([
+    [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")]
+  ]));
+});
+bot.action("CANCEL_CREATE", async (ctx) => {
+  await ctx.answerCbQuery();
+  pendingAmount.delete(ctx.from.id);
+  await showMainMenu(ctx, "Cancelled ✅ Back to menu:");
 });
 
 bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
@@ -300,6 +333,7 @@ bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
 
   await ctx.answerCbQuery("Done ✅");
   await ctx.reply(`Here’s your link:\n${link}`, { disable_web_page_preview: true });
+  await showMainMenu(ctx, "Back to menu 👇");
 
   await sendLog(
     process.env.CREATE_LOG_CHAT_ID,
