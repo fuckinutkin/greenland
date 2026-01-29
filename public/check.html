@@ -1,6 +1,32 @@
 <!doctype html>
 <html>
-  <body>
-    UI coming soon
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Greenland</title>
+</head>
+<body>
+  <h1 id="amount">Loading…</h1>
+  <p id="meta"></p>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    fetch(`/api/link?id=${id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          document.body.innerHTML = "Link not found";
+          return;
+        }
+
+        document.getElementById("amount").textContent =
+          data.amount + " " + data.currency.toUpperCase();
+
+        document.getElementById("meta").textContent =
+          "Link ID: " + data.id;
+      });
+  </script>
+</body>
 </html>
