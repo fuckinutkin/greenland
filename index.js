@@ -16,6 +16,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
 
 app.use(express.json({ limit: "100kb" }));
+app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -113,84 +114,8 @@ app.get("/check", async (req, res) => {
   }
 
   // Minimal page + minimal support chat (replace later with Figma)
-  res.setHeader("content-type", "text/html; charset=utf-8");
-  res.send(`
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Check</title>
-</head>
-<body>
-  <div>
-    <div><b>Amount:</b> ${record.amount}</div>
-    <div><b>Currency:</b> ${safeUpper(record.currency)}</div>
-    <div><b>Link ID:</b> ${record.id}</div>
-  </div>
+  return res.sendFile("check.html", { root: "public" });
 
-  <hr/>
-
-  <h3>Support chat</h3>
-  <div id="chat" style="border:1px solid #ddd; padding:10px; height:220px; overflow:auto; font-family: Arial, sans-serif; white-space:pre-wrap;"></div>
-
-  <div style="margin-top:10px;">
-    <input id="msg" placeholder="Write to support..." style="width:70%; padding:8px;"/>
-    <button id="send" style="padding:8px 12px;">Send</button>
-  </div>
-
-  <script>
-    // visitor thread id stored in browser
-    const LINK_ID = ${JSON.stringify(record.id)};
-    let threadId = localStorage.getItem("greenland_thread_" + LINK_ID);
-    if (!threadId) {
-      threadId = Math.random().toString(36).slice(2, 12);
-      localStorage.setItem("greenland_thread_" + LINK_ID, threadId);
-    }
-
-    const chat = document.getElementById("chat");
-    const msg = document.getElementById("msg");
-    const sendBtn = document.getElementById("send");
-
-    function render(messages) {
-      chat.textContent = messages.map(m => {
-        const who = m.from === "visitor" ? "You" : "Support";
-        return "[" + new Date(m.ts).toLocaleTimeString() + "] " + who + ": " + m.text;
-      }).join("\\n");
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    async function poll() {
-      try {
-        const r = await fetch("/api/support/poll?linkId=" + encodeURIComponent(LINK_ID) + "&threadId=" + encodeURIComponent(threadId));
-        const data = await r.json();
-        if (data && data.ok) render(data.messages || []);
-      } catch (e) {}
-      setTimeout(poll, 1500);
-    }
-
-    async function send() {
-      const text = msg.value.trim();
-      if (!text) return;
-
-      msg.value = "";
-      try {
-        await fetch("/api/support/send", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ linkId: LINK_ID, threadId, text })
-        });
-      } catch (e) {}
-    }
-
-    sendBtn.onclick = send;
-    msg.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
-
-    poll();
-  </script>
-</body>
-</html>
-  `);
 });
 
 // Visitor sends message to support -> forwarded to owner in Telegram
