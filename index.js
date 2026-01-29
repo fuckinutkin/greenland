@@ -3,6 +3,13 @@ import express from "express";
 import { Telegraf, Markup } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+// userId -> array of links (strings)
+const linksByUser = new Map();
+const linkStore = new Map(); // id -> { uid, amount, currency, createdAt }
+
+function makeId() {
+  return Math.random().toString(36).slice(2, 10); // like "k3f9x2ab"
+}
 
 // IMPORTANT: set this in Render ENV to your real URL, like:
 // https://greenland-2w80.onrender.com
@@ -475,7 +482,26 @@ bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
     return ctx.reply("Amount not found. Send the amount again.");
   }
 
-  const link = buildLink(amount, currency);
+  // 1️⃣ build link BASE (existing)
+const uid = ctx.from.id;
+
+// 2️⃣ REPLACE buildLink usage with this
+const url = new URL(`${BASE_URL}/check`);
+url.searchParams.set("amount", amount);
+url.searchParams.set("currency", currency);
+url.searchParams.set("uid", String(uid));
+const link = url.toString();
+
+// 3️⃣ SAVE link for profile (NEW)
+if (!linksByUser.has(uid)) linksByUser.set(uid, []);
+linksByUser.get(uid).unshift(link);
+
+// 4️⃣ send link to user (existing)
+await ctx.answerCbQuery("Done ✅");
+await ctx.reply(`Here’s your link:\n${link}`);
+
+// 5️⃣ LOG: link created (existing logs code)
+
 
   await ctx.answerCbQuery("Done ✅");
   await ctx.reply(`Here’s your link:\n${link}`);
