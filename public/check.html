@@ -9,10 +9,27 @@
   <h1 id="amount">Loading…</h1>
   <p id="meta"></p>
 
+  <hr />
+
+  <h3>Support chat</h3>
+  <div id="chat" style="border:1px solid #ddd; padding:10px; height:220px; overflow:auto; white-space:pre-wrap;"></div>
+
+  <div style="margin-top:10px;">
+    <input id="msg" placeholder="Write to support…" style="width:70%; padding:8px;" />
+    <button id="send" style="padding:8px 12px;">Send</button>
+  </div>
+
   <script>
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
 
+    const amountEl = document.getElementById("amount");
+    const metaEl = document.getElementById("meta");
+    const chatEl = document.getElementById("chat");
+    const msgInput = document.getElementById("msg");
+    const sendBtn = document.getElementById("send");
+
+    // Load link data
     fetch(`/api/link?id=${id}`)
       .then(r => r.json())
       .then(data => {
@@ -20,13 +37,50 @@
           document.body.innerHTML = "Link not found";
           return;
         }
-
-        document.getElementById("amount").textContent =
-          data.amount + " " + data.currency.toUpperCase();
-
-        document.getElementById("meta").textContent =
-          "Link ID: " + data.id;
+        amountEl.textContent = data.amount + " " + data.currency.toUpperCase();
+        metaEl.textContent = "Link ID: " + data.id;
       });
+
+    // Thread id per visitor per link
+    let threadId = localStorage.getItem("greenland_thread_" + id);
+    if (!threadId) {
+      threadId = Math.random().toString(36).slice(2, 10);
+      localStorage.setItem("greenland_thread_" + id, threadId);
+    }
+
+    function render(messages) {
+      chatEl.textContent = (messages || []).map(m => {
+        const who = m.from === "visitor" ? "You" : "Support";
+        const time = new Date(m.ts).toLocaleTimeString();
+        return "[" + time + "] " + who + ": " + m.text;
+      }).join("\n");
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function poll() {
+      fetch(`/api/support/poll?linkId=${encodeURIComponent(id)}&threadId=${encodeURIComponent(threadId)}`)
+        .then(r => r.json())
+        .then(d => { if (d.ok) render(d.messages); })
+        .catch(() => {})
+        .finally(() => setTimeout(poll, 1500));
+    }
+
+    function send() {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      msgInput.value = "";
+
+      fetch("/api/support/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ linkId: id, threadId, text })
+      }).catch(() => {});
+    }
+
+    sendBtn.onclick = send;
+    msgInput.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+
+    poll();
   </script>
 </body>
 </html>
