@@ -253,6 +253,12 @@ bot.start(async (ctx) => {
 bot.on("text", async (ctx) => {
   const text = ctx.message.text.trim();
   if (text.startsWith("/")) return;
+// ✅ If this message is a reply to a SUPPORT message, ignore amount flow.
+// The support handler will process it.
+const repliedText = ctx.message?.reply_to_message?.text || "";
+if (repliedText.includes("🆘 SUPPORT") && repliedText.includes("Link ID:") && repliedText.includes("Thread:")) {
+  return;
+}
 
   // 🚫 User is NOT in "create link" flow
   if (!createMode.get(ctx.from.id)) {
