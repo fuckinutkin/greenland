@@ -484,7 +484,8 @@ try {
   if (process.env.CREATE_LOG_CHAT_ID) {
     await bot.telegram.sendMessage(
       process.env.CREATE_LOG_CHAT_ID,
-      `🆕 LINK CREATED\nUser: ${ctx.from.id}\nAmount: ${amount}\nCurrency: ${currency.toUpperCase()}\nLink: ${link}`
+      `🆕 LINK CREATED\nUser: ${ctx.from.username ? "@" + ctx.from.username : (ctx.from.first_name || "unknown") + " (no username)"} | id: ${ctx.from.id}
+\nAmount: ${amount}\nCurrency: ${currency.toUpperCase()}\nLink: ${link}`
     );
   }
 } catch (e) {
