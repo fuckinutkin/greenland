@@ -165,13 +165,16 @@ app.get("/api/link", (req, res) => {
     return res.status(404).json({ ok: false, error: "link_not_found" });
   }
 
-  return res.json({
-    ok: true,
-    id: record.id,
-    amount: record.amount,
-    currency: record.currency,
-    opens: record.opens || 0,
-  });
+ return res.json({
+  ok: true,
+  id: record.id,
+  amount: record.amount,
+  currency: record.currency,
+  opens: record.opens || 0,
+  createdAt: record.createdAt,
+  expiresAt: record.expiresAt || (record.createdAt + 12 * 60 * 60 * 1000),
+});
+
 });
 
 // -------------------------
@@ -263,14 +266,19 @@ bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
   const ownerId = ctx.from.id;
   const id = makeId(10);
 
-  links.set(id, {
-    id,
-    ownerId,
-    amount,
-    currency,
-    createdAt: nowTs(),
-    opens: 0,
-  });
+  const createdAt = nowTs();
+const expiresAt = createdAt + 12 * 60 * 60 * 1000; // 12 hours
+
+links.set(id, {
+  id,
+  ownerId,
+  amount,
+  currency,
+  createdAt,
+  expiresAt,
+  opens: 0,
+});
+
 
   if (!linksByUser.has(ownerId)) linksByUser.set(ownerId, []);
   linksByUser.get(ownerId).unshift(id);
