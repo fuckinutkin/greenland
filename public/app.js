@@ -26,15 +26,41 @@ btnClaim?.addEventListener("click", () => {
 });
 
 // Countdown (starts from 11:59)
-let remaining = 11 * 60 + 59;
-function tick() {
-  const m = Math.floor(remaining / 60);
-  const s = remaining % 60;
-  expiresEl.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-  if (remaining > 0) remaining -= 1;
-  setTimeout(tick, 1000);
+let expiresAtMs = null;
+let timerHandle = null;
+
+function formatHHMMSS(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return (
+    String(h).padStart(2, "0") + ":" +
+    String(m).padStart(2, "0") + ":" +
+    String(s).padStart(2, "0")
+  );
 }
-tick();
+
+function startCountdown() {
+  if (!expiresEl) return;
+
+  function tick() {
+    const now = Date.now();
+    const diffMs = Math.max(0, expiresAtMs - now);
+    const diffSec = Math.floor(diffMs / 1000);
+
+    expiresEl.textContent = formatHHMMSS(diffSec);
+
+    if (diffSec <= 0) {
+      // expired
+      clearInterval(timerHandle);
+      timerHandle = null;
+    }
+  }
+
+  tick();
+  timerHandle = setInterval(tick, 1000);
+}
+
 
 // Load link data
 fetch(`/api/link?id=${encodeURIComponent(linkId || "")}`)
@@ -58,9 +84,13 @@ fetch(`/api/link?id=${encodeURIComponent(linkId || "")}`)
 
     // currency: USDT
     currencyEl.textContent = `currency: ${String(data.currency).toUpperCase()}`;
+    expiresAtMs = Number(data.expiresAt);
+startCountdown();
+
   })
   .catch(() => {
     document.body.innerHTML = "Link not found";
+    
   });
 
 // Support chat: threadId per visitor per link
