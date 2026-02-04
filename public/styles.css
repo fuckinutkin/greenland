@@ -1,4 +1,3 @@
-body{outline:8px solid lime !important;}
 
 :root{
   --top-bg: #fdeee8;
@@ -8,6 +7,7 @@ body{outline:8px solid lime !important;}
   --btn: #ff8b5e;
   --radius: 999px;
 }
+
 /* FORCE: never show both at same time */
 .desktop-only{ display:block !important; }
 .mobile-only{ display:none !important; }
@@ -17,17 +17,6 @@ body{outline:8px solid lime !important;}
   .mobile-only{ display:block !important; }
 }
 
-*{ box-sizing:border-box; }
-html, body{ height:100%; }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--ink);
-  background:#fff;
-}
-
-.desktop-only{ display:block; }
-.mobile-only{ display:none; }
 
 /* ===== TOP ===== */
 .top{
@@ -36,13 +25,13 @@ body{
 }
 
 .nav{
-  width: 1440px;
-  max-width: calc(100% - 64px);
+  width: min(1440px, calc(100% - 64px));
   margin: 0 auto;
   display:flex;
   align-items:center;
   gap: 18px;
 }
+
 
 .logo-link{ display:block; }
 .logo{
@@ -118,13 +107,13 @@ body{
 
 /* ===== HERO ===== */
 .hero{
-  width: 1440px;
-  max-width: calc(100% - 64px);
+  width: min(1440px, calc(100% - 64px));
   margin: 18px auto 0;
   position: relative;
   display:flex;
   justify-content:center;
 }
+
 
 /* Background image wrapper */
 .hero-bg{
@@ -390,8 +379,9 @@ body{
 
 /* ===== MOBILE (440) ===== */
 @media (max-width: 700px){
-  .desktop-only{ display:none; }
-  .mobile-only{ display:block; }
+  .desktop-only{ display:none !important; }
+  .mobile-only{ display:block !important; }
+
 
   .nav{
     width: 440px;
