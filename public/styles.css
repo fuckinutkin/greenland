@@ -378,9 +378,6 @@
 }
 
 /* ===== MOBILE (440) ===== */
-@media (max-width: 700px){
-  .desktop-only{ display:none !important; }
-  .mobile-only{ display:block !important; }
 
 
   .nav{
