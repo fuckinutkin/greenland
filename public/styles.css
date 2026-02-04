@@ -1,3 +1,5 @@
+body{outline:8px solid lime !important;}
+
 :root{
   --top-bg: #fdeee8;
   --ink: #0f1513;
