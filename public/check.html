@@ -1,142 +1,191 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Check</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css"/>
 </head>
-
 <body>
-  <!-- TOP AREA -->
-  <div class="top">
-    <header class="nav">
-      <!-- Logo (link) -->
-      <a class="logo-link" href="https://metamask.io" target="_blank" rel="noopener">
-        <img class="logo" src="/assets/logo.svg" alt="logo" />
+
+  <!-- DESKTOP FRAME (Figma export style) -->
+  <div class="desktop-only">
+    <div style="width: 1200px; height: 2109px; position: relative; background: #FFEFE8; overflow: hidden; margin: 0 auto;">
+      <!-- MENU PILL -->
+      <div style="width: 573px; height: 67px; left: 172px; top: 29px; position: absolute">
+        <div style="width: 573px; height: 67px; left: 0px; top: 0px; position: absolute; background: white; border-radius: 100px"></div>
+
+        <a href="https://youtube.com" target="_blank" rel="noopener"
+           style="left: 35px; top: 21px; position: absolute; color: black; font-size: 20px; font-family: Inter; font-weight: 400; text-decoration:none;">Features</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener"
+           style="left: 181px; top: 21px; position: absolute; color: black; font-size: 20px; font-family: Inter; font-weight: 400; text-decoration:none;">About</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener"
+           style="left: 302px; top: 21px; position: absolute; color: black; font-size: 20px; font-family: Inter; font-weight: 400; text-decoration:none;">Download</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener"
+           style="left: 461px; top: 21px; position: absolute; color: black; font-size: 20px; font-family: Inter; font-weight: 400; text-decoration:none;">Support</a>
+      </div>
+
+      <!-- CONNECT BUTTON (dummy) -->
+      <button id="btnConnect"
+        style="width: 182px; height: 67px; padding: 10px; left: 958px; top: 29px; position: absolute; background: #FF8D5D; border-radius: 500px; border:0; cursor:pointer;">
+        <div style="color: white; font-size: 20px; font-family: Inter; font-weight: 600;">Connect</div>
+      </button>
+
+      <!-- LOGO (hyperlink) -->
+      <a href="https://metamask.io" target="_blank" rel="noopener">
+        <img style="width: 89px; height: 44px; left: 60px; top: 40px; position: absolute; mix-blend-mode: darken"
+             src="/assets/logo.svg" alt="logo" />
       </a>
 
-      <!-- Desktop menu pill -->
-      <nav class="menu desktop-only" aria-label="top menu">
-        <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Features</a>
-        <a class="menu-link" href="https://www.google.com/" target="_blank" rel="noopener">About</a>
-        <a class="menu-link" href="https://www.wikipedia.org/" target="_blank" rel="noopener">Download</a>
-        <a class="menu-link" href="https://www.reddit.com/" target="_blank" rel="noopener">Support</a>
-      </nav>
+      <!-- HERO BG -->
+      <div style="width: 1080px; height: 668px; left: 60px; top: 127px; position: absolute; background: linear-gradient(180deg, #FF8D5D 0%, #E56129 100%); border-radius: 20px"></div>
+      <img style="width: 1079px; height: 669px; left: 61px; top: 126px; position: absolute" src="/assets/bg.png" alt="bg" />
 
-      <!-- Desktop Connect button -->
-      <button class="btn-connect desktop-only" id="btnConnect" type="button">Connect</button>
+      <!-- DYNAMIC TEXT -->
+      <div id="checkTitle" style="left: 408px; top: 291px; position: absolute; color: white; font-size: 32px; font-family: Euclid Circular A, Inter, sans-serif; font-weight: 500;">
+        MetaMask Chek #------
+      </div>
 
-      <!-- Mobile burger -->
-      <button class="burger mobile-only" id="burgerBtn" type="button" aria-label="Open menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-    </header>
+      <div id="amount" style="left: 408px; top: 332px; position: absolute; color: white; font-size: 128px; font-family: Euclid Circular A, Inter, sans-serif; font-weight: 700;">
+        $0
+      </div>
 
-    <!-- Mobile dropdown menu -->
-    <div class="mobile-menu mobile-only" id="mobileMenu" aria-hidden="true">
-      <a class="menu-link" href="https://www.youtube.com/" target="_blank" rel="noopener">Features</a>
-      <a class="menu-link" href="https://www.google.com/" target="_blank" rel="noopener">About</a>
-      <a class="menu-link" href="https://www.wikipedia.org/" target="_blank" rel="noopener">Download</a>
-      <a class="menu-link" href="https://www.reddit.com/" target="_blank" rel="noopener">Support</a>
+      <div id="currency" style="left: 484px; top: 494px; position: absolute; color: white; font-size: 32px; font-family: Euclid Circular A, Inter, sans-serif; font-weight: 400;">
+        currency: ---
+      </div>
+
+      <!-- CLAIM (dummy) -->
+      <div id="btnClaim" role="button" tabindex="0"
+           style="width: 238px; padding-left: 10px; padding-right: 10px; padding-top: 18px; padding-bottom: 18px; left: 481px; top: 565px; position: absolute; background: white; border-radius: 1000px; justify-content: center; align-items: center; gap: 10px; display: inline-flex; cursor:pointer;">
+        <div style="color: #FF5C16; font-size: 24px; font-family: Inter; font-weight: 500;">Claim</div>
+      </div>
+
+      <div style="left: 395px; top: 743px; position: absolute; color: white; font-size: 14px; font-family: Inter; font-weight: 600;">
+        Warning: sharing your check link may result in loosing funds.
+      </div>
+
+      <!-- SECTION TITLE -->
+      <div style="left: 372px; top: 865px; position: absolute; text-align: center; color: black; font-size: 32px; font-family: Inter; font-weight: 500;">
+        How MetaMask check works?
+      </div>
+
+      <!-- INFO (desktop) -->
+      <img style="width: 524px; height: 305px; left: 60px; top: 936px; position: absolute" src="/assets/info1.png" alt="info1" />
+      <img style="width: 524px; height: 305px; left: 616px; top: 936px; position: absolute" src="/assets/info2.png" alt="info2" />
+      <img style="width: 524px; height: 305px; left: 60px; top: 1273px; position: absolute" src="/assets/info3.png" alt="info3" />
+      <img style="width: 524px; height: 305px; left: 616px; top: 1273px; position: absolute" src="/assets/info4.png" alt="info4" />
+
+      <!-- FOOTER IMAGE (rename if needed) -->
+      <img style="width: 1080px; height: 367px; left: 60px; top: 1681px; position: absolute; border-radius: 25px" src="/assets/footer.png" alt="footer" />
+      <div style="left: 98px; top: 1992px; position: absolute; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">
+        ©2026 MetaMask · A Consensys Formation
+      </div>
     </div>
-
-    <!-- HERO CARD (background image) -->
-    <main class="hero">
-      <div class="hero-bg" aria-hidden="true">
-        <img src="/assets/bg.png" alt="" />
-      </div>
-
-      <div class="hero-content">
-        <div class="check-title" id="checkTitle">MetaMask Chek #------</div>
-        <div class="amount" id="amount">$0</div>
-        <div class="currency" id="currency">currency: USDT</div>
-
-        <button class="btn-claim" id="btnClaim" type="button">Claim</button>
-
-        <div class="warning">
-          Warning: sharing your check link may result in loosing funds.
-        </div>
-      </div>
-    </main>
   </div>
 
-  <!-- HOW IT WORKS -->
-  <section class="how">
-    <h2 class="how-title">How MetaMask check works?</h2>
+  <!-- MOBILE FRAME (Figma export style) -->
+  <div class="mobile-only">
+    <div style="width: 390px; height: 2729px; position: relative; background: #FFEFE8; overflow: hidden; margin: 0 auto;">
+      <div style="width: 362px; height: 74px; left: 14px; top: 15px; position: absolute; background: white; border-radius: 15px"></div>
 
-    <!-- Desktop grid (2x2) -->
-    <div class="info-grid desktop-only">
-      <img class="info-img" src="/assets/info1.png" alt="info1" />
-      <img class="info-img" src="/assets/info2.png" alt="info2" />
-      <img class="info-img" src="/assets/info3.png" alt="info3" />
-      <img class="info-img" src="/assets/info4.png" alt="info4" />
+      <!-- BURGER BUTTON -->
+      <button id="burgerBtn"
+        style="width: 37px; height: 37px; left: 319px; top: 33px; position: absolute; background: black; border-radius: 9999px; border:0; cursor:pointer;"
+        aria-label="Open menu" aria-expanded="false">
+      </button>
+      <div style="width: 19px; height: 2px; left: 328px; top: 48px; position: absolute; background: white; border-radius: 500px"></div>
+      <div style="width: 19px; height: 2px; left: 328px; top: 54px; position: absolute; background: white; border-radius: 500px"></div>
+
+      <!-- LOGO (hyperlink) -->
+      <a href="https://metamask.io" target="_blank" rel="noopener">
+        <img style="width: 56px; height: 28px; left: 34px; top: 38px; position: absolute;"
+             src="/assets/logo.svg" alt="logo" />
+      </a>
+
+      <!-- Mobile dropdown menu (hidden by default) -->
+      <div id="mobileMenu"
+        style="left: 14px; top: 96px; position: absolute; width: 362px; background: white; border-radius: 15px; padding: 14px 16px; display:none; flex-direction:column; gap: 12px;">
+        <a href="https://youtube.com" target="_blank" rel="noopener" style="color:black; font-size:16px; font-family: Inter; text-decoration:none;">Features</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener" style="color:black; font-size:16px; font-family: Inter; text-decoration:none;">About</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener" style="color:black; font-size:16px; font-family: Inter; text-decoration:none;">Download</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener" style="color:black; font-size:16px; font-family: Inter; text-decoration:none;">Support</a>
+      </div>
+
+      <!-- BG (mobile) -->
+      <img style="width: 360px; height: 646px; left: 15px; top: 109px; position: absolute; border-radius: 20px" src="/assets/bg.png" alt="bg mobile" />
+
+      <!-- DYNAMIC TEXT (mobile) -->
+      <div id="checkTitle_m" style="left: 72px; top: 297px; position: absolute; color: white; font-size: 20px; font-family: Inter; font-weight: 500;">
+        MetaMask Chek #------
+      </div>
+
+      <div id="amount_m" style="left: 58px; top: 336px; position: absolute; color: white; font-size: 80px; font-family: Inter; font-weight: 800;">
+        $0
+      </div>
+
+      <div id="currency_m" style="left: 120px; top: 448px; position: absolute; color: white; font-size: 20px; font-family: Inter; font-weight: 500;">
+        currency: ---
+      </div>
+
+      <!-- CLAIM (dummy) -->
+      <div id="btnClaim_m" role="button" tabindex="0"
+        style="width: 285px; padding-left: 10px; padding-right: 10px; padding-top: 18px; padding-bottom: 18px; left: 53px; top: 507px; position: absolute; background: white; border-radius: 1000px; justify-content: center; align-items: center; gap: 10px; display: inline-flex; cursor:pointer;">
+        <div style="color: #FF5C16; font-size: 20px; font-family: Inter; font-weight: 500;">Claim</div>
+      </div>
+
+      <div style="width: 238px; left: 76px; top: 687px; position: absolute; text-align: center; color: white; font-size: 14px; font-family: Inter; font-weight: 600;">
+        Warning: sharing your check link may result in loosing funds.
+      </div>
+
+      <div style="width: 284px; left: 53px; top: 792px; position: absolute; text-align: center; color: black; font-size: 30px; font-family: Inter; font-weight: 500;">
+        How MetaMask check works?
+      </div>
+
+      <!-- INFO (mobile) -->
+      <img style="width: 362px; height: 336px; left: 13px; top: 884px; position: absolute" src="/assets/info1_mobile.png" alt="info1 mobile" />
+      <img style="width: 362px; height: 336px; left: 13px; top: 1230px; position: absolute" src="/assets/info2_mobile.png" alt="info2 mobile" />
+      <img style="width: 362px; height: 336px; left: 13px; top: 1576px; position: absolute" src="/assets/info3_mobile.png" alt="info3 mobile" />
+      <img style="width: 362px; height: 336px; left: 14px; top: 1922px; position: absolute" src="/assets/info4_mobile.png" alt="info4 mobile" />
+
+      <!-- MOBILE FOOTER CARD + LINKS (as in your export) -->
+      <div style="width: 362px; height: 405px; left: 14px; top: 2309px; position: absolute; background: white; border-radius: 15px"></div>
+      <div style="width: 209.25px; left: 27.24px; top: 2334px; position: absolute; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 12px; display: inline-flex">
+        <div style="align-self: stretch; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Consensys</div>
+        <div style="align-self: stretch; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Privacy Policy</div>
+        <div style="align-self: stretch; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Terms of use</div>
+        <div style="color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Contributor License Agreement</div>
+        <div style="align-self: stretch; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Sitemap</div>
+        <div style="align-self: stretch; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Accessibility</div>
+        <div style="align-self: stretch; color: black; font-size: 16px; font-family: Inter; font-weight: 400;">Manage Cookies</div>
+      </div>
+      <div style="width: 335.51px; height: 0px; left: 27.24px; top: 2554px; position: absolute; outline: 1px rgba(0, 0, 0, 0.30) solid; outline-offset: -0.50px"></div>
+
+      <!-- social row image (rename if needed) -->
+      <img style="width: 329px; height: 56px; left: 27px; top: 2623px; position: absolute" src="/assets/social_row.png" alt="socials" />
+
+      <div style="width: 294.90px; left: 27.24px; top: 2569px; position: absolute; color: black; font-size: 14px; font-family: Inter; font-weight: 500;">
+        ©2026 MetaMask · A Consensys Formation
+      </div>
     </div>
+  </div>
 
-    <!-- Mobile stack -->
-    <div class="info-stack mobile-only">
-      <img class="info-img-mobile" src="/assets/info1_mobile.png" alt="info1 mobile" />
-      <img class="info-img-mobile" src="/assets/info2_mobile.png" alt="info2 mobile" />
-      <img class="info-img-mobile" src="/assets/info3_mobile.png" alt="info3 mobile" />
-      <img class="info-img-mobile" src="/assets/info4_mobile.png" alt="info4 mobile" />
-    </div>
-  </section>
-
-  <!-- Floating chat button (circle icon only) -->
-  <button class="chat-fab" id="chatFab" type="button" aria-label="Open chat">
+  <!-- Support button (fixed bottom-right circle for both) -->
+  <button id="chatFab" class="chat-fab" type="button" aria-label="Open support chat">
     <img src="/assets/support.svg" alt="" />
   </button>
 
-  <!-- Chat panel (same type as before) -->
-  <section class="chat-panel" id="chatPanel" aria-hidden="true">
-    <div class="chat-panel-head">
-      <div class="chat-panel-title">Support chat</div>
-      <button class="chat-close" id="chatClose" type="button">✕</button>
+  <!-- Support panel (same as before) -->
+  <section id="chatPanel" class="chat-panel hidden" aria-hidden="true">
+    <div class="chat-head">
+      <div>Support chat</div>
+      <button id="chatClose" class="chat-close" type="button">✕</button>
     </div>
-
-    <div class="chat-messages" id="chatMessages"></div>
-
+    <div id="chatMessages" class="chat-messages"></div>
     <div class="chat-input">
-      <input id="chatMsg" placeholder="Write to support…" />
+      <input id="chatMsg" placeholder="Write to support..." />
       <button id="chatSend" type="button">Send</button>
     </div>
   </section>
-
-  <!-- FOOTER (EXACT SAME AS BEFORE) -->
-  <footer class="footer">
-    <div class="footer-left">
-      <div class="img-box foot">
-        <img class="img" src="/assets/hero.png" alt="hero" />
-      </div>
-    </div>
-
-    <div class="footer-center">
-      <div class="socials">
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/x.png" alt="x" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/github.png" alt="github" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/youtube.png" alt="youtube" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/instagram.png" alt="instagram" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/reddit.png" alt="reddit" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/discord.png" alt="discord" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/tiktok.png" alt="tiktok" /></a>
-        <a class="social" href="https://www.youtube.com/" target="_blank" rel="noopener"><img src="/assets/social/rss.png" alt="rss" /></a>
-      </div>
-
-      <div class="fine">
-        <span>Consensys</span>
-        <span>Privacy Policy</span>
-        <span>Terms of Use</span>
-        <span>Contributor License Agreement</span>
-        <span>Sitemap</span>
-        <span>Accessibility</span>
-        <span>Manage Cookies</span>
-      </div>
-
-      <div class="copy">
-        ©2026 MetaMask • A Consensys Formation
-      </div>
-    </div>
-  </footer>
 
   <script src="/app.js"></script>
 </body>
