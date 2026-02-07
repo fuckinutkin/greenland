@@ -1,10 +1,30 @@
+html,
+body{
+  margin: 0;
+  padding: 0;
+  background: #FFEFE8;
+}
+
 /* show only one frame */
 .desktop-only{ display:block !important; }
 .mobile-only{ display:none !important; }
 
 @media (max-width: 700px){
   .desktop-only{ display:none !important; }
-  .mobile-only{ display:block !important; }
+  .mobile-only{
+    display:flex !important;
+    justify-content: center;
+    width: 100%;
+    --mobile-scale: min(1, calc(100vw / 390));
+    height: calc(2729px * var(--mobile-scale));
+    overflow: hidden;
+  }
+
+  .frame-mobile{
+    transform: scale(var(--mobile-scale));
+    transform-origin: top center;
+    margin: 0;
+  }
 }
 
 /* support button */
