@@ -146,3 +146,15 @@ body{
   padding: 10px 12px;
   cursor:pointer;
 }
+
+
+body{
+  background: #FFEFE8;
+}
+
+#amount,
+#amount_m{
+  left: 50% !important;
+  transform: translateX(-50%);
+  text-align: center;
+}
