@@ -210,7 +210,7 @@ bot.on("text", async (ctx, next) => {
   const text = ctx.message.text.trim();
   const userId = ctx.from.id;
 
-  if (text.startsWith("/")) return;
+  if (text.startsWith("/")) return next();
 
   const supportFlow = supportFlows.get(userId);
   if (supportFlow) {
