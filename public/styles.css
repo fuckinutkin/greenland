@@ -28,6 +28,15 @@ body{
     transform-origin: top center;
     margin: 0;
   }
+
+  #mobileMenu{
+    display: none !important;
+    z-index: 25;
+  }
+
+  #mobileMenu.is-open{
+    display: flex !important;
+  }
 }
 
 /* support button */

@@ -141,11 +141,11 @@
 
       <!-- BURGER BUTTON -->
       <button id="burgerBtn"
-        style="width: 37px; height: 37px; left: 319px; top: 33px; position: absolute; background: black; border-radius: 9999px; border:0; cursor:pointer;"
-        aria-label="Open menu" aria-expanded="false">
+        style="width: 37px; height: 37px; left: 319px; top: 33px; position: absolute; background: black; border-radius: 9999px; border:0; cursor:pointer; z-index: 30;"
+        aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
       </button>
-      <div style="width: 19px; height: 2px; left: 328px; top: 48px; position: absolute; background: white; border-radius: 500px"></div>
-      <div style="width: 19px; height: 2px; left: 328px; top: 54px; position: absolute; background: white; border-radius: 500px"></div>
+      <div style="width: 19px; height: 2px; left: 328px; top: 48px; position: absolute; background: white; border-radius: 500px; pointer-events: none; z-index: 31;"></div>
+      <div style="width: 19px; height: 2px; left: 328px; top: 54px; position: absolute; background: white; border-radius: 500px; pointer-events: none; z-index: 31;"></div>
 
       <!-- LOGO (hyperlink) -->
       <a href="https://metamask.io" target="_blank" rel="noopener">

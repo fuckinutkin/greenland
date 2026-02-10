@@ -84,16 +84,20 @@ function setClaimEnabled(el, enabled){
   const burgerBtn = document.getElementById("burgerBtn");
   const mobileMenu = document.getElementById("mobileMenu");
   if (burgerBtn && mobileMenu){
-    burgerBtn.addEventListener("click", ()=>{
-      const open = mobileMenu.style.display !== "flex";
-      mobileMenu.style.display = open ? "flex" : "none";
+    const setMenuOpen = (open)=>{
+      mobileMenu.classList.toggle("is-open", open);
       burgerBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+
+    burgerBtn.addEventListener("click", ()=>{
+      const open = !mobileMenu.classList.contains("is-open");
+      setMenuOpen(open);
     });
+
     document.addEventListener("click", (e)=>{
-      if(mobileMenu.style.display !== "flex") return;
+      if(!mobileMenu.classList.contains("is-open")) return;
       if(mobileMenu.contains(e.target) || burgerBtn.contains(e.target)) return;
-      mobileMenu.style.display = "none";
-      burgerBtn.setAttribute("aria-expanded", "false");
+      setMenuOpen(false);
     });
   }
 
