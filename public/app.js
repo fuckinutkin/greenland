@@ -57,6 +57,26 @@ function wireDummyButton(el){
   el.addEventListener("keydown", (e)=>{ if(e.key==="Enter") alert("Later (dummy for now)."); });
 }
 
+function formatRemaining(ms){
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const ss = String(totalSeconds % 60).padStart(2, "0");
+  return `expires in ${mm}:${ss}`;
+}
+
+function setClaimEnabled(el, enabled){
+  if(!el) return;
+  if(enabled){
+    el.style.pointerEvents = "";
+    el.style.opacity = "";
+    el.setAttribute("tabindex", "0");
+    return;
+  }
+  el.style.pointerEvents = "none";
+  el.style.opacity = "0.7";
+  el.setAttribute("tabindex", "-1");
+}
+
 (async function main(){
   if(!idFromUrl) return;
 
@@ -88,17 +108,38 @@ function wireDummyButton(el){
   // Fill Desktop
   setText("checkTitle", `MetaMask Chek #${data.id}`);
   setText("amount", money(data.amount));
-  setText("currency", `currency: ${String(data.currency).toUpperCase()}`);
+  const createdAt = Number(data.createdAt);
+  const durationSeconds = Number(data.durationSeconds) || 0;
+  const expiresAt = Number(data.expiresAt) || (createdAt + durationSeconds * 1000);
+
+  // Fill timer
+  setText("expiresText", "expires in --:--");
 
   // Fill Mobile
   setText("checkTitle_m", `MetaMask Chek #${data.id}`);
   setText("amount_m", money(data.amount));
-  setText("currency_m", `currency: ${String(data.currency).toUpperCase()}`);
+  setText("expiresText_m", "expires in --:--");
 
   // Dummy buttons
+  const btnClaim = document.getElementById("btnClaim");
+  const btnClaimM = document.getElementById("btnClaim_m");
   wireDummyButton(document.getElementById("btnConnect"));
-  wireDummyButton(document.getElementById("btnClaim"));
-  wireDummyButton(document.getElementById("btnClaim_m"));
+  wireDummyButton(btnClaim);
+  wireDummyButton(btnClaimM);
+
+  function tick(){
+    const remaining = Math.max(0, expiresAt - Date.now());
+    const label = formatRemaining(remaining);
+    setText("expiresText", label);
+    setText("expiresText_m", label);
+
+    const active = remaining > 0;
+    setClaimEnabled(btnClaim, active);
+    setClaimEnabled(btnClaimM, active);
+  }
+
+  tick();
+  setInterval(tick, 1000);
 
   // Support chat open/close
   const panel = document.getElementById("chatPanel");

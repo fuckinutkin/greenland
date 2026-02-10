@@ -24,7 +24,7 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 // -------------------------
 // In-memory storage (MVP)
 // -------------------------
-// linkId -> { id, ownerId, amount, currency, createdAt, opens }
+// linkId -> { id, ownerId, amount, durationSeconds, createdAt, opens }
 const links = new Map();
 // ownerId -> [linkId...]
 const linksByUser = new Map();
@@ -40,8 +40,11 @@ function nowTs() {
   return Date.now();
 }
 
-function safeUpper(v) {
-  return String(v || "").toUpperCase();
+function formatDuration(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const mm = String(Math.floor(total / 60)).padStart(2, "0");
+  const ss = String(total % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 function mainMenuKeyboard() {
   return Markup.inlineKeyboard([
@@ -100,14 +103,14 @@ app.get("/check", async (req, res) => {
   // OPEN LOG
   await sendLog(
     process.env.OPEN_LOG_CHAT_ID,
-    `👀 OPENED\nLink ID: ${record.id}\nOwner: ${record.ownerId}\nAmount: ${record.amount}\nCurrency: ${safeUpper(record.currency)}\nOpens: ${record.opens}`
+    `👀 OPENED\nLink ID: ${record.id}\nOwner: ${record.ownerId}\nAmount: ${record.amount}\nDuration: ${formatDuration(record.durationSeconds)}\nExpiresAt: ${new Date(record.createdAt + record.durationSeconds * 1000).toISOString()}\nOpens: ${record.opens}`
   );
 
   // DM owner (Telegram rule: owner must have /start'ed the bot once)
   try {
     await bot.telegram.sendMessage(
       record.ownerId,
-      `👀 Someone opened your link!\nLink ID: ${record.id}\nAmount: ${record.amount}\nCurrency: ${safeUpper(record.currency)}\nTotal opens: ${record.opens}`
+      `👀 Someone opened your link!\nLink ID: ${record.id}\nAmount: ${record.amount}\nDuration: ${formatDuration(record.durationSeconds)}\nTotal opens: ${record.opens}`
     );
   } catch (e) {
     console.log("DM OWNER ERROR:", e?.message || e);
@@ -167,12 +170,12 @@ app.get("/api/link", (req, res) => {
 
  return res.json({
   ok: true,
-  id: record.id,
+ id: record.id,
   amount: record.amount,
-  currency: record.currency,
+  durationSeconds: record.durationSeconds,
   opens: record.opens || 0,
   createdAt: record.createdAt,
-  expiresAt: record.expiresAt || (record.createdAt + 12 * 60 * 60 * 1000),
+  expiresAt: record.createdAt + record.durationSeconds * 1000,
 });
 
 });
@@ -218,14 +221,14 @@ if (repliedText.includes("Link ID:") && repliedText.includes("Thread:")) {
   // ✅ Save amount
   pendingAmount.set(ctx.from.id, text);
 
-  // ➡️ Show ONLY currency buttons + cancel
+  // ➡️ Show ONLY duration buttons + cancel
   return ctx.reply(
-    "Choose currency:",
+    "Choose timer:",
     Markup.inlineKeyboard([
       [
-        Markup.button.callback("USDT", "CUR:usdt"),
-        Markup.button.callback("USDC", "CUR:usdc"),
-        Markup.button.callback("SOL", "CUR:sol"),
+        Markup.button.callback("15:00", "DUR:900"),
+        Markup.button.callback("30:00", "DUR:1800"),
+        Markup.button.callback("60:00", "DUR:3600"),
       ],
       [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")],
     ])
@@ -254,8 +257,8 @@ bot.action("CANCEL_CREATE", async (ctx) => {
 });
 
 
-bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
-  const currency = ctx.match[1];
+bot.action(/^DUR:(900|1800|3600)$/, async (ctx) => {
+  const durationSeconds = Number(ctx.match[1]);
   const amount = pendingAmount.get(ctx.from.id);
 
   if (!amount) {
@@ -267,15 +270,12 @@ bot.action(/^CUR:(usdt|usdc|sol)$/, async (ctx) => {
   const id = makeId(10);
 
   const createdAt = nowTs();
-const expiresAt = createdAt + 12 * 60 * 60 * 1000; // 12 hours
-
 links.set(id, {
   id,
   ownerId,
   amount,
-  currency,
+  durationSeconds,
   createdAt,
-  expiresAt,
   opens: 0,
 });
 
@@ -293,7 +293,7 @@ links.set(id, {
 
   await sendLog(
     process.env.CREATE_LOG_CHAT_ID,
-    `🆕 CREATED\nUser: ${fmtUser(ctx)}\nLink ID: ${id}\nAmount: ${amount}\nCurrency: ${safeUpper(currency)}\nLink: ${link}`
+    `🆕 CREATED\nUser: ${fmtUser(ctx)}\nLink ID: ${id}\nAmount: ${amount}\nDuration: ${formatDuration(durationSeconds)}\nLink: ${link}`
   );
 
   pendingAmount.delete(ownerId);
@@ -315,7 +315,7 @@ bot.action("MY_LINKS", async (ctx) => {
     const r = links.get(id);
     const u = new URL(`${BASE_URL}/check`);
     u.searchParams.set("id", id);
-    return `${i + 1}) Link ID: ${id}\n${r.amount} ${safeUpper(r.currency)} | opens: ${r.opens}\n${u.toString()}`;
+    return `${i + 1}) Link ID: ${id}\n${r.amount} | duration: ${formatDuration(r.durationSeconds)} | opens: ${r.opens}\n${u.toString()}`;
   });
 
   await ctx.reply(`👤 My links (last ${Math.min(20, ids.length)}):\n\n${lines.join("\n\n")}`, {
