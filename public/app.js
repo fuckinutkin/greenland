@@ -1,5 +1,6 @@
 const params = new URLSearchParams(location.search);
 const idFromUrl = params.get("id");
+const threadFromUrl = params.get("thread");
 
 function money(amount){
   const n = Number(amount);
@@ -8,7 +9,12 @@ function money(amount){
 }
 
 // ----- support chat helpers -----
-function getThreadId(linkId){
+function getThreadId(linkId, explicitThreadId){
+  if(explicitThreadId){
+    localStorage.setItem("greenland_thread_" + linkId, explicitThreadId);
+    return explicitThreadId;
+  }
+
   let tid = localStorage.getItem("greenland_thread_" + linkId);
   if(!tid){
     tid = Math.random().toString(36).slice(2, 12);
@@ -29,12 +35,17 @@ function renderMsgs(list){
   box.scrollTop = box.scrollHeight;
 }
 
-function poll(linkId, threadId){
+function poll(linkId, threadId, onMessages){
   fetch(`/api/support/poll?linkId=${encodeURIComponent(linkId)}&threadId=${encodeURIComponent(threadId)}`)
     .then(r => r.json())
-    .then(d => { if (d?.ok) renderMsgs(d.messages || []); })
+    .then(d => {
+      if (!d?.ok) return;
+      const messages = d.messages || [];
+      renderMsgs(messages);
+      if (onMessages) onMessages(messages);
+    })
     .catch(()=>{})
-    .finally(()=> setTimeout(()=>poll(linkId, threadId), 1500));
+    .finally(()=> setTimeout(()=>poll(linkId, threadId, onMessages), 1500));
 }
 
 function sendMsg(linkId, threadId, text){
@@ -152,7 +163,10 @@ function setClaimEnabled(el, enabled){
   const input = document.getElementById("chatMsg");
   const send = document.getElementById("chatSend");
 
-  const threadId = getThreadId(String(data.id));
+  const linkId = String(data.id);
+  const threadId = getThreadId(linkId, threadFromUrl);
+  const ownerSeenKey = `greenland_last_seen_owner_${linkId}_${threadId}`;
+  let lastSeenOwnerTs = Number(localStorage.getItem(ownerSeenKey) || 0);
 
   function openChat(){
     panel.classList.remove("hidden");
@@ -164,6 +178,25 @@ function setClaimEnabled(el, enabled){
     panel.setAttribute("aria-hidden", "true");
   }
 
+  function isChatHidden(){
+    return panel.classList.contains("hidden");
+  }
+
+  function handleIncomingOwnerMessages(messages){
+    const latestOwnerTs = messages
+      .filter((m)=> m.from === "owner" && Number(m.ts) > 0)
+      .reduce((maxTs, m)=> Math.max(maxTs, Number(m.ts)), 0);
+
+    if (latestOwnerTs <= lastSeenOwnerTs) return;
+
+    lastSeenOwnerTs = latestOwnerTs;
+    localStorage.setItem(ownerSeenKey, String(lastSeenOwnerTs));
+
+    if (isChatHidden()) {
+      openChat();
+    }
+  }
+
   fab.addEventListener("click", openChat);
   close.addEventListener("click", closeChat);
 
@@ -171,11 +204,11 @@ function setClaimEnabled(el, enabled){
     const text = input.value.trim();
     if(!text) return;
     input.value = "";
-    await sendMsg(String(data.id), threadId, text);
+    await sendMsg(linkId, threadId, text);
   }
 
   send.addEventListener("click", doSend);
   input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doSend(); });
 
-  poll(String(data.id), threadId);
+  poll(linkId, threadId, handleIncomingOwnerMessages);
 })();
