@@ -58,10 +58,10 @@ body{
 /* support panel */
 .chat-panel{
   position: fixed;
-  right: 16px;
+  right: 15px;
   bottom: 84px;
   width: 360px;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - 30px);
   height: 420px;
   background: #fff;
   border-radius: 16px;
