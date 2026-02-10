@@ -357,7 +357,15 @@ bot.on("message", async (ctx) => {
   } catch {}
 });
 
-bot.launch();
-console.log("Bot running ✅");
+async function startBot() {
+  try {
+    await bot.launch();
+    console.log("Bot running ✅");
+  } catch (e) {
+    console.error("Bot launch failed (continuing without Telegram polling):", e?.message || e);
+  }
+}
+
+startBot();
 
 app.listen(PORT, () => console.log("Website running on port", PORT));
