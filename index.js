@@ -29,15 +29,11 @@ const links = new Map();
 // ownerId -> [linkId...]
 const linksByUser = new Map();
 
-// threadId -> { linkId, ownerId, messages: [{from, text, ts}] }
+// ${linkId}:main -> { linkId, ownerId, messages: [{from, text, ts}] }
 const threads = new Map();
 
 function makeId() {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function makeThreadId() {
-  return Math.random().toString(36).slice(2, 12);
 }
 
 function nowTs() {
@@ -96,7 +92,6 @@ app.get("/", (req, res) => {
  */
 app.get("/check", async (req, res) => {
   const id = String(req.query.id || "");
-  const thread = String(req.query.thread || ""); // optional thread selector for support chat
   const record = links.get(id);
 
   if (!record) {
@@ -122,24 +117,21 @@ app.get("/check", async (req, res) => {
   }
 
   // Minimal page + minimal support chat (replace later with Figma)
-  // thread query is intentionally optional and consumed by frontend app.js
-  void thread;
   return res.sendFile("check.html", { root: "public" });
 
 });
 
 // Visitor sends message to support -> forwarded to owner in Telegram
 app.post("/api/support/send", async (req, res) => {
-  const { linkId, threadId, text } = req.body || {};
+  const { linkId, text } = req.body || {};
   const record = links.get(String(linkId || ""));
 
   if (!record) return res.status(404).json({ ok: false, error: "link_not_found" });
-  if (!threadId || !text) return res.status(400).json({ ok: false, error: "missing_fields" });
+  if (!text) return res.status(400).json({ ok: false, error: "missing_fields" });
 
-  const tid = String(threadId);
   const cleanText = String(text).slice(0, 500);
 
-  const key = `${record.id}:${tid}`;
+  const key = `${record.id}:main`;
   if (!threads.has(key)) {
     threads.set(key, { linkId: record.id, ownerId: record.ownerId, messages: [] });
   }
@@ -148,7 +140,7 @@ app.post("/api/support/send", async (req, res) => {
 
   // Forward to owner as a message they can reply to
   // We embed identifiers in the message so we can route replies.
-  const header = `🆘 SUPPORT\nLink ID: ${record.id}\nThread: ${tid}\n---\n`;
+  const header = `🆘 SUPPORT\nLink ID: ${record.id}\n---\n`;
   try {
     await bot.telegram.sendMessage(record.ownerId, header + cleanText);
   } catch (e) {
@@ -161,8 +153,7 @@ app.post("/api/support/send", async (req, res) => {
 // Website polls for messages (visitor gets owner's replies)
 app.get("/api/support/poll", (req, res) => {
   const linkId = String(req.query.linkId || "");
-  const threadId = String(req.query.threadId || "");
-  const key = `${linkId}:${threadId}`;
+  const key = `${linkId}:main`;
 
   const t = threads.get(key);
   res.json({ ok: true, messages: t?.messages || [] });
@@ -192,7 +183,6 @@ app.get("/api/link", (req, res) => {
 // -------------------------
 const pendingAmount = new Map();
 const createMode = new Map(); // userId -> true when user is creating a link
-const supportFlows = new Map(); // userId -> { step, linkId, threadId, createdNewThread }
 
 function isValidAmount(text) {
   return /^(\d+)(\.\d+)?$/.test(text) && Number(text) > 0;
@@ -201,7 +191,6 @@ function isValidAmount(text) {
 bot.start(async (ctx) => {
   createMode.delete(ctx.from.id);
   pendingAmount.delete(ctx.from.id);
-  supportFlows.delete(ctx.from.id);
   await showMainMenu(ctx, "Welcome 👋 Choose an option:");
 });
 
@@ -212,73 +201,10 @@ bot.on("text", async (ctx, next) => {
 
   if (text.startsWith("/")) return next();
 
-  const supportFlow = supportFlows.get(userId);
-  if (supportFlow) {
-    if (supportFlow.step === "await_link") {
-      const linkId = text;
-      const record = links.get(linkId);
-      if (!record) {
-        return ctx.reply("❌ Link not found. Send a valid Link ID or /cancel.");
-      }
-      if (Number(record.ownerId) !== Number(userId)) {
-        return ctx.reply("❌ You can only manage your own links. Send another Link ID or /cancel.");
-      }
-
-      supportFlow.linkId = linkId;
-      supportFlow.step = "await_thread";
-      return ctx.reply(
-        "Send Thread ID to target an existing thread, or send `new` to create one.",
-        { parse_mode: "Markdown" }
-      );
-    }
-
-    if (supportFlow.step === "await_thread") {
-      const threadInput = text.toLowerCase();
-      if (threadInput === "new") {
-        supportFlow.threadId = makeThreadId();
-        supportFlow.createdNewThread = true;
-      } else {
-        supportFlow.threadId = text;
-        supportFlow.createdNewThread = false;
-      }
-      supportFlow.step = "await_message";
-      return ctx.reply("Now send the support message text.");
-    }
-
-    if (supportFlow.step === "await_message") {
-      const linkId = supportFlow.linkId;
-      const threadId = supportFlow.threadId;
-      const record = links.get(linkId);
-      if (!record || Number(record.ownerId) !== Number(userId)) {
-        supportFlows.delete(userId);
-        return ctx.reply("❌ Link is no longer available. Start again with /support.");
-      }
-
-      const key = `${linkId}:${threadId}`;
-      if (!threads.has(key)) {
-        threads.set(key, { linkId, ownerId: userId, messages: [] });
-      }
-      const t = threads.get(key);
-      t.messages.push({ from: "owner", text: String(text).slice(0, 500), ts: nowTs() });
-
-      const url = new URL(`${BASE_URL}/check`);
-      url.searchParams.set("id", linkId);
-      url.searchParams.set("thread", threadId);
-
-      supportFlows.delete(userId);
-      const createdText = supportFlow.createdNewThread ? "\n🆕 New thread created." : "";
-      return ctx.reply(
-        `✅ Support message sent to thread ${threadId}.${createdText}\nShare this URL with visitor:\n${url.toString()}`,
-        { disable_web_page_preview: true }
-      );
-    }
-  }
-
-  // ✅ If this message is a reply to a SUPPORT message, ignore amount flow.
-  // The support handler will process it.
+  // If this message is a reply to a CREATE log message, ignore amount flow.
   const repliedText = ctx.message?.reply_to_message?.text || "";
-  if (repliedText.includes("Link ID:") && repliedText.includes("Thread:")) {
-    return next(); // ✅ let the SUPPORT reply handler run
+  if (repliedText.includes("🆕 CREATED") && repliedText.includes("Link ID:")) {
+    return next();
   }
 
   // 🚫 User is NOT in "create link" flow
@@ -325,7 +251,6 @@ bot.action("CANCEL_CREATE", async (ctx) => {
 
   createMode.delete(ctx.from.id);
   pendingAmount.delete(ctx.from.id);
-  supportFlows.delete(ctx.from.id);
 
   await showMainMenu(ctx, "Cancelled ✅ Back to menu:");
 });
@@ -352,6 +277,11 @@ links.set(id, {
   createdAt,
   opens: 0,
 });
+
+  const threadKey = `${id}:main`;
+  if (!threads.has(threadKey)) {
+    threads.set(threadKey, { linkId: id, ownerId, messages: [] });
+  }
 
 
   if (!linksByUser.has(ownerId)) linksByUser.set(ownerId, []);
@@ -398,89 +328,12 @@ bot.action("MY_LINKS", async (ctx) => {
 });
 
 bot.command("cancel", async (ctx) => {
-  supportFlows.delete(ctx.from.id);
   createMode.delete(ctx.from.id);
   pendingAmount.delete(ctx.from.id);
   return ctx.reply("✅ Cancelled current flow.");
 });
 
-bot.command("threads", async (ctx) => {
-  const text = ctx.message.text.trim();
-  const [, linkIdRaw] = text.split(/\s+/, 2);
-  const linkId = String(linkIdRaw || "").trim();
-
-  if (!linkId) {
-    return ctx.reply("Usage: /threads <linkId>");
-  }
-
-  const record = links.get(linkId);
-  if (!record) return ctx.reply("❌ Link not found.");
-  if (Number(record.ownerId) !== Number(ctx.from.id)) return ctx.reply("❌ This link is not yours.");
-
-  const activeThreads = [];
-  for (const [key, thread] of threads.entries()) {
-    if (thread.linkId !== linkId) continue;
-    const lastTs = thread.messages.at(-1)?.ts || 0;
-    const threadId = key.split(":")[1] || "";
-    activeThreads.push({ threadId, count: thread.messages.length, lastTs });
-  }
-
-  activeThreads.sort((a, b) => b.lastTs - a.lastTs);
-  const list = activeThreads.slice(0, 10);
-
-  if (list.length === 0) {
-    return ctx.reply(`No active threads for ${linkId} yet.`);
-  }
-
-  const lines = list.map((item, i) => `${i + 1}) ${item.threadId} | messages: ${item.count}`);
-  return ctx.reply(`🧵 Threads for ${linkId} (last ${list.length}):\n\n${lines.join("\n")}`);
-});
-
-bot.command("support_send", async (ctx) => {
-  const text = ctx.message.text.trim();
-  const parts = text.split(/\s+/);
-  if (parts.length < 4) {
-    return ctx.reply("Usage: /support_send <linkId> <threadId> <text>");
-  }
-
-  const [, linkId, threadId, ...messageParts] = parts;
-  const record = links.get(linkId);
-  if (!record) return ctx.reply("❌ Link not found.");
-  if (Number(record.ownerId) !== Number(ctx.from.id)) return ctx.reply("❌ This link is not yours.");
-
-  const messageText = messageParts.join(" ").slice(0, 500);
-  if (!messageText) return ctx.reply("❌ Message text is required.");
-
-  const key = `${linkId}:${threadId}`;
-  if (!threads.has(key)) {
-    threads.set(key, { linkId, ownerId: ctx.from.id, messages: [] });
-  }
-  const t = threads.get(key);
-  t.messages.push({ from: "owner", text: messageText, ts: nowTs() });
-
-  const url = new URL(`${BASE_URL}/check`);
-  url.searchParams.set("id", linkId);
-  url.searchParams.set("thread", threadId);
-
-  return ctx.reply(`✅ Sent. Thread URL:\n${url.toString()}`, { disable_web_page_preview: true });
-});
-
-bot.command("support", async (ctx) => {
-  const ownerId = ctx.from.id;
-  const myLinkIds = linksByUser.get(ownerId) || [];
-  supportFlows.set(ownerId, { step: "await_link" });
-
-  if (myLinkIds.length === 0) {
-    return ctx.reply("Send Link ID for support message routing.");
-  }
-
-  const lines = myLinkIds.slice(0, 10).map((id, i) => `${i + 1}) ${id}`);
-  return ctx.reply(
-    `Support flow started.\nSend Link ID.\n\nYour links:\n${lines.join("\n")}\n\nUse /cancel to stop.`
-  );
-});
-
-// Owner replies in Telegram to the forwarded SUPPORT message -> goes back to website thread
+// Owner replies to CREATE log message in Telegram chat A -> goes to website support chat
 bot.on("message", async (ctx) => {
   // only handle replies
   const msg = ctx.message;
@@ -489,28 +342,30 @@ bot.on("message", async (ctx) => {
 
   const original = msg.reply_to_message.text;
 
-  // We look for:
-  // "Link ID: <id>" and "Thread: <thread>"
-  const linkMatch = original.match(/Link ID:\s*([a-z0-9]+)/i);
-  const threadMatch = original.match(/Thread:\s*([a-z0-9]+)/i);
+  if (!original.includes("🆕 CREATED") || !original.includes("Link ID:")) return;
 
-  if (!linkMatch || !threadMatch) return;
+  const linkMatch = original.match(/Link ID:\s*([a-z0-9]+)/i);
+  if (!linkMatch) return;
 
   const linkId = linkMatch[1];
-  const threadId = threadMatch[1];
-
-  const key = `${linkId}:${threadId}`;
-  const t = threads.get(key);
-  if (!t) return;
+  const record = links.get(linkId);
+  if (!record) return;
 
   // security: only the owner can answer
-  if (Number(ctx.from.id) !== Number(t.ownerId)) return;
+  if (Number(ctx.from.id) !== Number(record.ownerId)) return;
+
+  const key = `${linkId}:main`;
+  if (!threads.has(key)) {
+    threads.set(key, { linkId, ownerId: record.ownerId, messages: [] });
+  }
+
+  const t = threads.get(key);
 
   t.messages.push({ from: "owner", text: String(msg.text).slice(0, 500), ts: nowTs() });
 
   // optional: acknowledge in Telegram
   try {
-    await ctx.reply("✅ Sent to website support chat");
+    await ctx.reply("✅ Sent to website chat");
   } catch {}
 });
 

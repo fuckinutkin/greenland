@@ -1,26 +1,10 @@
 const params = new URLSearchParams(location.search);
 const idFromUrl = params.get("id");
-const threadFromUrl = params.get("thread");
 
 function money(amount){
   const n = Number(amount);
   if (Number.isFinite(n)) return "$" + n.toLocaleString("en-US");
   return "$" + String(amount);
-}
-
-// ----- support chat helpers -----
-function getThreadId(linkId, explicitThreadId){
-  if(explicitThreadId){
-    localStorage.setItem("greenland_thread_" + linkId, explicitThreadId);
-    return explicitThreadId;
-  }
-
-  let tid = localStorage.getItem("greenland_thread_" + linkId);
-  if(!tid){
-    tid = Math.random().toString(36).slice(2, 12);
-    localStorage.setItem("greenland_thread_" + linkId, tid);
-  }
-  return tid;
 }
 
 function renderMsgs(list){
@@ -164,7 +148,7 @@ function setClaimEnabled(el, enabled){
   const send = document.getElementById("chatSend");
 
   const linkId = String(data.id);
-  const threadId = getThreadId(linkId, threadFromUrl);
+  const threadId = "main";
   const ownerSeenKey = `greenland_last_seen_owner_${linkId}_${threadId}`;
   let lastSeenOwnerTs = Number(localStorage.getItem(ownerSeenKey) || 0);
 
