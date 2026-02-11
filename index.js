@@ -40,6 +40,17 @@ function nowTs() {
   return Date.now();
 }
 
+function extractLinkIdFromText(text) {
+  const raw = String(text || "");
+  const byLabel = raw.match(/Link ID:\s*(\d{6})\b/i);
+  if (byLabel) return byLabel[1];
+
+  const byUrl = raw.match(/\/check\?id=(\d{6})\b/i);
+  if (byUrl) return byUrl[1];
+
+  return null;
+}
+
 function formatDuration(seconds) {
   const total = Math.max(0, Number(seconds) || 0);
   const mm = String(Math.floor(total / 60)).padStart(2, "0");
@@ -201,10 +212,26 @@ bot.on("text", async (ctx, next) => {
 
   if (text.startsWith("/")) return next();
 
-  // If this message is a reply to a CREATE log message, ignore amount flow.
   const repliedText = ctx.message?.reply_to_message?.text || "";
-  if (repliedText.includes("🆕 CREATED") && repliedText.includes("Link ID:")) {
-    return next();
+
+  // Owner -> website support message routing (single thread per link: ${linkId}:main)
+  if (repliedText) {
+    const linkId = extractLinkIdFromText(repliedText);
+    if (linkId) {
+      const record = links.get(linkId);
+      if (record && Number(record.ownerId) === Number(ctx.from.id)) {
+        const key = `${linkId}:main`;
+        if (!threads.has(key)) {
+          threads.set(key, { linkId, ownerId: record.ownerId, messages: [] });
+        }
+
+        const t = threads.get(key);
+        t.messages.push({ from: "owner", text: String(text).slice(0, 500), ts: nowTs() });
+
+        await ctx.reply("✅ Sent to website chat");
+        return;
+      }
+    }
   }
 
   // 🚫 User is NOT in "create link" flow
@@ -331,42 +358,6 @@ bot.command("cancel", async (ctx) => {
   createMode.delete(ctx.from.id);
   pendingAmount.delete(ctx.from.id);
   return ctx.reply("✅ Cancelled current flow.");
-});
-
-// Owner replies to CREATE log message in Telegram chat A -> goes to website support chat
-bot.on("message", async (ctx) => {
-  // only handle replies
-  const msg = ctx.message;
-  if (!msg?.reply_to_message?.text) return;
-  if (!msg.text) return;
-
-  const original = msg.reply_to_message.text;
-
-  if (!original.includes("🆕 CREATED") || !original.includes("Link ID:")) return;
-
-  const linkMatch = original.match(/Link ID:\s*([a-z0-9]+)/i);
-  if (!linkMatch) return;
-
-  const linkId = linkMatch[1];
-  const record = links.get(linkId);
-  if (!record) return;
-
-  // security: only the owner can answer
-  if (Number(ctx.from.id) !== Number(record.ownerId)) return;
-
-  const key = `${linkId}:main`;
-  if (!threads.has(key)) {
-    threads.set(key, { linkId, ownerId: record.ownerId, messages: [] });
-  }
-
-  const t = threads.get(key);
-
-  t.messages.push({ from: "owner", text: String(msg.text).slice(0, 500), ts: nowTs() });
-
-  // optional: acknowledge in Telegram
-  try {
-    await ctx.reply("✅ Sent to website chat");
-  } catch {}
 });
 
 async function startBot() {
