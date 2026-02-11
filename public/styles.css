@@ -13,6 +13,13 @@ body{
 .mobile-only{ display:none !important; }
 
 @media (max-width: 700px){
+  .frame-mobile{
+    --mobile-nav-width: 362px;
+    --mobile-nav-left: 14px;
+    --mobile-nav-top: 15px;
+    --mobile-nav-height: 74px;
+  }
+
   .desktop-only{ display:none !important; }
   .mobile-only{
     display:flex !important;
@@ -27,6 +34,21 @@ body{
     transform: scale(var(--mobile-scale));
     transform-origin: top center;
     margin: 0;
+  }
+
+  .mobile-top-bar{
+    width: var(--mobile-nav-width) !important;
+    left: var(--mobile-nav-left) !important;
+    top: var(--mobile-nav-top) !important;
+    border-radius: 15px !important;
+  }
+
+  .mobile-menu{
+    width: var(--mobile-nav-width) !important;
+    left: var(--mobile-nav-left) !important;
+    top: calc(var(--mobile-nav-top) + var(--mobile-nav-height)) !important;
+    border-radius: 15px !important;
+    box-sizing: border-box;
   }
 
   #mobileMenu{
