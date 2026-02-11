@@ -24,7 +24,7 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 // -------------------------
 // In-memory storage (MVP)
 // -------------------------
-// linkId -> { id, ownerId, amount, durationSeconds, createdAt, opens }
+// linkId -> { id, ownerId, amount, network, durationSeconds, currency, createdAt, opens }
 const links = new Map();
 // ownerId -> [linkId...]
 const linksByUser = new Map();
@@ -52,6 +52,7 @@ function extractLinkIdFromText(text) {
 }
 
 function formatDuration(seconds) {
+  if (seconds == null) return "No timer";
   const total = Math.max(0, Number(seconds) || 0);
   const mm = String(Math.floor(total / 60)).padStart(2, "0");
   const ss = String(total % 60).padStart(2, "0");
@@ -66,6 +67,21 @@ function mainMenuKeyboard() {
       Markup.button.url("📣 Greenland channel", process.env.CHANNEL_URL || "https://t.me/"),
     ],
   ]);
+}
+
+function formatNetwork(network) {
+  const allowed = {
+    trc20: "TRC20",
+    erc20: "ERC20",
+    sol: "SOL",
+    bep20: "BEP20",
+  };
+  return allowed[network] || String(network || "-").toUpperCase();
+}
+
+function formatCurrency(currency) {
+  if (!currency) return null;
+  return String(currency).toUpperCase();
 }
 
 async function showMainMenu(ctx, text = "Menu:") {
@@ -114,14 +130,14 @@ app.get("/check", async (req, res) => {
   // OPEN LOG
   await sendLog(
     process.env.OPEN_LOG_CHAT_ID,
-    `👀 OPENED\nLink ID: ${record.id}\nOwner: ${record.ownerId}\nAmount: ${record.amount}\nDuration: ${formatDuration(record.durationSeconds)}\nExpiresAt: ${new Date(record.createdAt + record.durationSeconds * 1000).toISOString()}\nOpens: ${record.opens}`
+    `👀 OPENED\nLink ID: ${record.id}\nOwner: ${record.ownerId}\nAmount: ${record.amount}\nNetwork: ${formatNetwork(record.network)}\nDuration: ${formatDuration(record.durationSeconds)}${record.durationSeconds != null ? `\nExpiresAt: ${new Date(record.createdAt + record.durationSeconds * 1000).toISOString()}` : ""}${record.currency ? `\nCurrency: ${formatCurrency(record.currency)}` : ""}\nOpens: ${record.opens}`
   );
 
   // DM owner (Telegram rule: owner must have /start'ed the bot once)
   try {
     await bot.telegram.sendMessage(
       record.ownerId,
-      `👀 Someone opened your link!\nLink ID: ${record.id}\nAmount: ${record.amount}\nDuration: ${formatDuration(record.durationSeconds)}\nTotal opens: ${record.opens}`
+      `👀 Someone opened your link!\nLink ID: ${record.id}\nAmount: ${record.amount}\nNetwork: ${formatNetwork(record.network)}\nDuration: ${formatDuration(record.durationSeconds)}${record.currency ? `\nCurrency: ${formatCurrency(record.currency)}` : ""}\nTotal opens: ${record.opens}`
     );
   } catch (e) {
     console.log("DM OWNER ERROR:", e?.message || e);
@@ -181,10 +197,12 @@ app.get("/api/link", (req, res) => {
   ok: true,
  id: record.id,
   amount: record.amount,
+  network: record.network || null,
   durationSeconds: record.durationSeconds,
+  currency: record.currency || null,
   opens: record.opens || 0,
   createdAt: record.createdAt,
-  expiresAt: record.createdAt + record.durationSeconds * 1000,
+  expiresAt: record.durationSeconds != null ? (record.createdAt + record.durationSeconds * 1000) : null,
 });
 
 });
@@ -192,16 +210,14 @@ app.get("/api/link", (req, res) => {
 // -------------------------
 // Bot
 // -------------------------
-const pendingAmount = new Map();
-const createMode = new Map(); // userId -> true when user is creating a link
+const createState = new Map(); // userId -> { step, amount, network, durationSeconds, currency }
 
 function isValidAmount(text) {
   return /^(\d+)(\.\d+)?$/.test(text) && Number(text) > 0;
 }
 
 bot.start(async (ctx) => {
-  createMode.delete(ctx.from.id);
-  pendingAmount.delete(ctx.from.id);
+  createState.delete(ctx.from.id);
   await showMainMenu(ctx, "Welcome 👋 Choose an option:");
 });
 
@@ -234,9 +250,15 @@ bot.on("text", async (ctx, next) => {
     }
   }
 
+  const state = createState.get(userId);
+
   // 🚫 User is NOT in "create link" flow
-  if (!createMode.get(userId)) {
+  if (!state) {
     return showMainMenu(ctx, "Tap ✅ Create link to start.");
+  }
+
+  if (state.step !== "amount") {
+    return ctx.reply("Use the buttons below to continue.");
   }
 
   // ❌ Invalid amount
@@ -245,16 +267,20 @@ bot.on("text", async (ctx, next) => {
   }
 
   // ✅ Save amount
-  pendingAmount.set(userId, text);
+  state.amount = text;
+  state.step = "network";
+  createState.set(userId, state);
 
-  // ➡️ Show ONLY duration buttons + cancel
   return ctx.reply(
-    "Choose timer:",
+    "Choose network:",
     Markup.inlineKeyboard([
       [
-        Markup.button.callback("15:00", "DUR:900"),
-        Markup.button.callback("30:00", "DUR:1800"),
-        Markup.button.callback("60:00", "DUR:3600"),
+        Markup.button.callback("TRC20", "NET:trc20"),
+        Markup.button.callback("ERC20", "NET:erc20"),
+      ],
+      [
+        Markup.button.callback("SOL", "NET:sol"),
+        Markup.button.callback("BEP20", "NET:bep20"),
       ],
       [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")],
     ])
@@ -264,8 +290,7 @@ bot.on("text", async (ctx, next) => {
 bot.action("CREATE_LINK", async (ctx) => {
   await ctx.answerCbQuery();
 
-  createMode.set(ctx.from.id, true);
-  pendingAmount.delete(ctx.from.id);
+  createState.set(ctx.from.id, { step: "amount", amount: null, network: null, durationSeconds: null, currency: null });
 
   await ctx.reply(
     "Send amount (number). Example: 12.5",
@@ -276,40 +301,58 @@ bot.action("CREATE_LINK", async (ctx) => {
 bot.action("CANCEL_CREATE", async (ctx) => {
   await ctx.answerCbQuery();
 
-  createMode.delete(ctx.from.id);
-  pendingAmount.delete(ctx.from.id);
+  createState.delete(ctx.from.id);
 
   await showMainMenu(ctx, "Cancelled ✅ Back to menu:");
 });
 
 
-bot.action(/^DUR:(900|1800|3600)$/, async (ctx) => {
-  const durationSeconds = Number(ctx.match[1]);
-  const amount = pendingAmount.get(ctx.from.id);
-
-  if (!amount) {
+bot.action(/^NET:(trc20|erc20|sol|bep20)$/, async (ctx) => {
+  const state = createState.get(ctx.from.id);
+  if (!state || state.step !== "network") {
     await ctx.answerCbQuery();
-    return ctx.reply("Amount not found. Send the amount again.");
+    return ctx.reply("Start again from Create link.");
   }
 
+  state.network = ctx.match[1];
+  state.step = "timer";
+  createState.set(ctx.from.id, state);
+
+  await ctx.answerCbQuery();
+  return ctx.reply(
+    "Choose timer:",
+    Markup.inlineKeyboard([
+      [
+        Markup.button.callback("15:00", "DUR:900"),
+        Markup.button.callback("30:00", "DUR:1800"),
+        Markup.button.callback("60:00", "DUR:3600"),
+      ],
+      [Markup.button.callback("No timer", "DUR:none")],
+      [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")],
+    ])
+  );
+});
+
+async function finalizeLinkCreation(ctx, state) {
   const ownerId = ctx.from.id;
   const id = makeId(10);
 
   const createdAt = nowTs();
-links.set(id, {
-  id,
-  ownerId,
-  amount,
-  durationSeconds,
-  createdAt,
-  opens: 0,
-});
+  links.set(id, {
+    id,
+    ownerId,
+    amount: state.amount,
+    network: state.network,
+    durationSeconds: state.durationSeconds,
+    currency: state.currency,
+    createdAt,
+    opens: 0,
+  });
 
   const threadKey = `${id}:main`;
   if (!threads.has(threadKey)) {
     threads.set(threadKey, { linkId: id, ownerId, messages: [] });
   }
-
 
   if (!linksByUser.has(ownerId)) linksByUser.set(ownerId, []);
   linksByUser.get(ownerId).unshift(id);
@@ -318,18 +361,61 @@ links.set(id, {
   url.searchParams.set("id", id);
   const link = url.toString();
 
-  await ctx.answerCbQuery("Done ✅");
   await ctx.reply(`Here’s your link:\n${link}`, { disable_web_page_preview: true });
   await showMainMenu(ctx, "Back to menu 👇");
 
   await sendLog(
     process.env.CREATE_LOG_CHAT_ID,
-    `🆕 CREATED\nUser: ${fmtUser(ctx)}\nLink ID: ${id}\nAmount: ${amount}\nDuration: ${formatDuration(durationSeconds)}\nLink: ${link}`
+    `🆕 CREATED\nUser: ${fmtUser(ctx)}\nLink ID: ${id}\nAmount: ${state.amount}\nNetwork: ${formatNetwork(state.network)}\nDuration: ${formatDuration(state.durationSeconds)}${state.currency ? `\nCurrency: ${formatCurrency(state.currency)}` : ""}\nLink: ${link}`
   );
 
-  pendingAmount.delete(ownerId);
-  createMode.delete(ownerId);
+  createState.delete(ownerId);
+}
 
+bot.action(/^DUR:(900|1800|3600|none)$/, async (ctx) => {
+  const state = createState.get(ctx.from.id);
+  if (!state || state.step !== "timer" || !state.amount || !state.network) {
+    await ctx.answerCbQuery();
+    return ctx.reply("Data not found. Start again from Create link.");
+  }
+
+  if (ctx.match[1] === "none") {
+    state.durationSeconds = null;
+    state.step = "currency";
+    createState.set(ctx.from.id, state);
+    await ctx.answerCbQuery();
+    return ctx.reply(
+      "Choose currency:",
+      Markup.inlineKeyboard([
+        [
+          Markup.button.callback("USDT", "CUR:usdt"),
+          Markup.button.callback("USDC", "CUR:usdc"),
+        ],
+        [Markup.button.callback("❌ Cancel", "CANCEL_CREATE")],
+      ])
+    );
+  }
+
+  state.durationSeconds = Number(ctx.match[1]);
+  state.currency = null;
+  createState.set(ctx.from.id, state);
+  await ctx.answerCbQuery("Done ✅");
+  await finalizeLinkCreation(ctx, state);
+});
+
+bot.action(/^CUR:(usdt|usdc)$/, async (ctx) => {
+  const state = createState.get(ctx.from.id);
+  if (!state || state.step !== "currency" || !state.amount || !state.network) {
+    await ctx.answerCbQuery();
+    return ctx.reply("Data not found. Start again from Create link.");
+  }
+
+  state.currency = ctx.match[1];
+  state.step = "done";
+  createState.set(ctx.from.id, state);
+
+  await ctx.answerCbQuery("Done ✅");
+  await finalizeLinkCreation(ctx, state);
 });
 
 bot.action("MY_LINKS", async (ctx) => {
@@ -346,7 +432,10 @@ bot.action("MY_LINKS", async (ctx) => {
     const r = links.get(id);
     const u = new URL(`${BASE_URL}/check`);
     u.searchParams.set("id", id);
-    return `${i + 1}) Link ID: ${id}\n${r.amount} | duration: ${formatDuration(r.durationSeconds)} | opens: ${r.opens}\n${u.toString()}`;
+    const extra = r.durationSeconds == null
+      ? `currency: ${formatCurrency(r.currency)} (${formatNetwork(r.network)})`
+      : `duration: ${formatDuration(r.durationSeconds)}`;
+    return `${i + 1}) Link ID: ${id}\n${r.amount} | ${extra} | opens: ${r.opens}\n${u.toString()}`;
   });
 
   await ctx.reply(`👤 My links (last ${Math.min(20, ids.length)}):\n\n${lines.join("\n\n")}`, {
@@ -355,8 +444,7 @@ bot.action("MY_LINKS", async (ctx) => {
 });
 
 bot.command("cancel", async (ctx) => {
-  createMode.delete(ctx.from.id);
-  pendingAmount.delete(ctx.from.id);
+  createState.delete(ctx.from.id);
   return ctx.reply("✅ Cancelled current flow.");
 });
 

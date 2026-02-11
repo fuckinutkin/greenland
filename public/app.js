@@ -46,6 +46,22 @@ function setText(id, value){
   if (el) el.textContent = value;
 }
 
+function setDisplay(id, visible){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = visible ? "" : "none";
+}
+
+function formatNetwork(network){
+  const labels = {
+    trc20: "TRC20",
+    erc20: "ERC20",
+    sol: "SOL",
+    bep20: "BEP20",
+  };
+  return labels[String(network || "").toLowerCase()] || String(network || "").toUpperCase();
+}
+
 function wireDummyButton(el){
   if(!el) return;
   el.addEventListener("click", ()=> alert("Later (dummy for now)."));
@@ -108,8 +124,11 @@ function setClaimEnabled(el, enabled){
   setText("checkTitle", `MetaMask Chek #${data.id}`);
   setText("amount", money(data.amount));
   const createdAt = Number(data.createdAt);
-  const durationSeconds = Number(data.durationSeconds) || 0;
-  const expiresAt = Number(data.expiresAt) || (createdAt + durationSeconds * 1000);
+  const hasTimer = data.durationSeconds !== null && data.durationSeconds !== undefined;
+  const durationSeconds = hasTimer ? Number(data.durationSeconds) : null;
+  const expiresAt = hasTimer
+    ? (Number(data.expiresAt) || (createdAt + durationSeconds * 1000))
+    : null;
 
   // Fill timer
   setText("expiresText", "expires in --:--");
@@ -137,8 +156,18 @@ function setClaimEnabled(el, enabled){
     setClaimEnabled(btnClaimM, active);
   }
 
-  tick();
-  setInterval(tick, 1000);
+  if (hasTimer) {
+    setDisplay("expiresText", true);
+    setDisplay("expiresText_m", true);
+    tick();
+    setInterval(tick, 1000);
+  } else {
+    const currencyLine = `currency: ${String(data.currency || "").toUpperCase()} (${formatNetwork(data.network)})`;
+    setText("expiresText", currencyLine);
+    setText("expiresText_m", currencyLine);
+    setClaimEnabled(btnClaim, true);
+    setClaimEnabled(btnClaimM, true);
+  }
 
   // Support chat open/close
   const panel = document.getElementById("chatPanel");
