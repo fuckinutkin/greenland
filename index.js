@@ -197,7 +197,7 @@ app.get("/api/link", (req, res) => {
   ok: true,
  id: record.id,
   amount: record.amount,
-  network: record.network || null,
+  network: record.network ?? null,
   durationSeconds: record.durationSeconds,
   currency: record.currency || null,
   opens: record.opens || 0,
